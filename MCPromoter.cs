@@ -123,10 +123,7 @@ namespace MCPromoter
             return length;
         }
 
-        public static void LoadConf()
-        {
-            
-        }
+        public static void LoadConf() { }
         
         public static void Init(MCCSAPI api, (string Name, string Version, string Author) pluginInfo)
         {
