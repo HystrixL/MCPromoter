@@ -66,8 +66,6 @@ namespace MCPromoter
     public class MCPromoter
     {
         private static MCCSAPI _mapi;
-        //private static Dictionary<string, PlayerDatas> _playerDatas = new Dictionary<string, PlayerDatas>();
-        //private static GameDatas _gameDatas = new GameDatas();
 
         private static string worldName = "InnerWorld";
 
