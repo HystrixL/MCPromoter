@@ -157,7 +157,7 @@ namespace MCPromoter
             iniFile.IniWriteValue("WhiteList", "PlayerNames", "");
             iniFile.IniWriteValue("WhiteList", "PlayerXuids", "");
             iniFile.IniWriteValue("WhiteList", "AdminNames", "");
-            iniFile.IniWriteValue("WhiteList", "AllowedCmds", "");
+            iniFile.IniWriteValue("WhiteList", "AllowedCmds", "/help");
             iniFile.IniWriteValue("Customization", "SuicideMsgs", "");
             iniFile.IniWriteValue("Customization", "Prefix", "@");
 
@@ -253,15 +253,29 @@ namespace MCPromoter
                                         api.runcmd("scoreboard objectives add Counter dummy");
                                         break;
                                     case "setting":
+                                        if (adminNames.Contains(name))
+                                        {
+                                            switch (argsList[2])
+                                            {
+                                                case "reload":
+                                                    LoadConf();
+                                                    StandardizedFeedback("@a", "[MCP]配置文件已重新载入。");
+                                                    break;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            StandardizedFeedback(name,$"{prefix}mcp setting需要admin权限才可使用，您当前无权使用该指令。");
+                                        }
                                         break;
                                     default:
-                                        StandardizedFeedback(name, "无效的@mcp指令，请使用@MCP status获取帮助");
+                                        StandardizedFeedback(name, $"无效的{prefix}mcp指令，请使用{prefix}mcp status获取帮助");
                                         break;
                                 }
                             }
                             else
                             {
-                                StandardizedFeedback(name, "无效的@mcp指令，请使用@MCP status获取帮助");
+                                StandardizedFeedback(name, $"无效的{prefix}mcp指令，请使用{prefix}mcp status获取帮助");
                             }
 
                             break;
@@ -331,7 +345,7 @@ namespace MCPromoter
                             }
                             else
                             {
-                                StandardizedFeedback(name,"@ban需要admin权限才可使用，您当前无权使用该指令。");
+                                StandardizedFeedback(name,$"{prefix}ban需要admin权限才可使用，您当前无权使用该指令。");
                             }
 
                             break;
@@ -428,7 +442,7 @@ namespace MCPromoter
                             api.runcmd($"kill {name}");
                             for (int i = 0; i < suicideMsgs.Length; i++)
                             {
-                                suicideMsgs[i] = suicideMsgs[i].Replace("{name}",name);
+                                suicideMsgs[i] = suicideMsgs[i].Replace("{}",name);
                             }
                             int suicideMsgNum = new Random().Next(0, suicideMsgs.Length);
                             StandardizedFeedback("@a", suicideMsgs[suicideMsgNum]);
@@ -465,7 +479,7 @@ namespace MCPromoter
                             }
                             else
                             {
-                                StandardizedFeedback(name,"@rc需要admin权限才可使用，您当前无权使用该指令。");
+                                StandardizedFeedback(name,$"{prefix}rc需要admin权限才可使用，您当前无权使用该指令。");
                             }
 
                             break;
@@ -534,7 +548,7 @@ namespace MCPromoter
 
                             break;
                         default:
-                            StandardizedFeedback(name, "无效的MCP指令，请输入@mcp help获取帮助");
+                            StandardizedFeedback(name, $"无效的MCP指令，请输入{prefix}mcp help获取帮助");
                             break;
                     }
                 }
@@ -758,7 +772,7 @@ namespace CSR
     {
         public static void onStart(MCCSAPI api)
         {
-            var pluginInfo = (Name: "MinecraftPromoter", Version: "V1.2.3", Author: "XianYu_Hil");
+            var pluginInfo = (Name: "MinecraftPromoter", Version: "V1.3.0", Author: "XianYu_Hil");
             MCPromoter.MCPromoter.Init(api, pluginInfo);
             Console.WriteLine($"[{pluginInfo.Name} - {pluginInfo.Version}]Loaded.");
         }
