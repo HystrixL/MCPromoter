@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -40,34 +42,44 @@ namespace MCPromoter
     class IniFile
     {
         private readonly string _path;
-        
-        public IniFile(string iniPath) 
-        { 
-            _path = iniPath; 
+
+        public IniFile(string iniPath)
+        {
+            _path = iniPath;
         }
+
         [DllImport("kernel32")]
         private static extern long WritePrivateProfileString(string section, string key, string val, string filePath);
+
         [DllImport("kernel32")]
-        private static extern int GetPrivateProfileString(string section, string key, string def, StringBuilder retVal, int size, string filePath);
-        
+        private static extern int GetPrivateProfileString(string section, string key, string def, StringBuilder retVal,
+            int size, string filePath);
+
         public void IniWriteValue(string section, string key, string value)
         {
             WritePrivateProfileString(section, key, value, _path);
         }
-        
+
         public string IniReadValue(string section, string key)
         {
             StringBuilder temp = new StringBuilder(255);
             int i = GetPrivateProfileString(section, key, "", temp, 255, _path);
             return temp.ToString();
         }
-    } 
-    
+    }
+
     public class MCPromoter
     {
         private static MCCSAPI _mapi;
 
-        private static string worldName = "InnerWorld";
+        private static string[] whitelistNames;
+        private static string[] whitelistUuids;
+        private static string[] adminNames;
+        private static string[] suicideMsgs;
+        private static string[] allowedCmds;
+        private static bool antiCheat;
+        private static string worldName;
+        private static string prefix;
 
         private static readonly string[] helpTexts =
         {
@@ -108,31 +120,83 @@ namespace MCPromoter
             _mapi.runcmd($"tickingarea remove loader_{botName}");
             StandardizedFeedback("@a", $"§ebot_{botName} 退出了游戏");
         }
-        
-        public static long GetWorldSize(String path){
-            DirectoryInfo directoryInfo=new DirectoryInfo(path);
-            long length=0;
-            foreach( FileSystemInfo fsi in directoryInfo.GetFileSystemInfos() ) {
-                if ( fsi is FileInfo ) {
-                    length += ((FileInfo)fsi).Length;
+
+        public static long GetWorldSize(String path)
+        {
+            DirectoryInfo directoryInfo = new DirectoryInfo(path);
+            long length = 0;
+            foreach (FileSystemInfo fsi in directoryInfo.GetFileSystemInfos())
+            {
+                if (fsi is FileInfo)
+                {
+                    length += ((FileInfo) fsi).Length;
                 }
-                else {
-                    length +=GetWorldSize(fsi.FullName);
+                else
+                {
+                    length += GetWorldSize(fsi.FullName);
                 }
             }
+
             return length;
         }
 
-        public static void LoadConf() { }
-        
+        public static void Initialize()
+        {
+            IniFile iniFile = new IniFile(@"CSR\MCP\config.ini");
+            if (!Directory.Exists(@"CSR\MCP"))
+            {
+                DirectoryInfo directoryInfo = new DirectoryInfo(@"CSR\MCP");
+                directoryInfo.Create();
+            }
+
+            FileStream fileStream = new FileStream(@"CSR\MCP\config.ini", FileMode.Create);
+            fileStream.Close();
+            iniFile.IniWriteValue("Config", "WorldName", "");
+            iniFile.IniWriteValue("Config", "AntiCheat", "true");
+            iniFile.IniWriteValue("WhiteList", "PlayerNames", "");
+            iniFile.IniWriteValue("WhiteList", "PlayerUuids", "");
+            iniFile.IniWriteValue("WhiteList", "AdminNames", "");
+            iniFile.IniWriteValue("WhiteList", "AllowedCmds", "");
+            iniFile.IniWriteValue("Customization", "SuicideMsgs", "");
+            iniFile.IniWriteValue("Customization", "Prefix", "@");
+
+            LoadConf();
+        }
+
+        public static void LoadConf()
+        {
+            IniFile iniFile = new IniFile(@"CSR\MCP\config.ini");
+            if (File.Exists(@"CSR\MCP\config.ini"))
+            {
+                worldName = iniFile.IniReadValue("Config", "WorldName");
+                antiCheat = Boolean.Parse(iniFile.IniReadValue("Config", "AntiCheat"));
+
+                string _whitelistNames = iniFile.IniReadValue("WhiteList", "PlayerNames");
+                whitelistNames = _whitelistNames.Split(';');
+                string _whitelistUuids = iniFile.IniReadValue("WhiteList", "PlayerUuids");
+                whitelistUuids = _whitelistUuids.Split(';');
+                string _adminNames = iniFile.IniReadValue("WhiteList", "AdminNames");
+                adminNames = _adminNames.Split(';');
+                string _allowedCmds = iniFile.IniReadValue("WhiteList", "AllowedCmds");
+                allowedCmds = _allowedCmds.Split(';');
+
+                string _suicideMsgs = iniFile.IniReadValue("Customization", "SuicideMsgs");
+                suicideMsgs = _suicideMsgs.Split(';');
+                prefix = iniFile.IniReadValue("Customization", "Prefix");
+            }
+            else
+            {
+                Initialize();
+            }
+        }
+
         public static void Init(MCCSAPI api, (string Name, string Version, string Author) pluginInfo)
         {
             Dictionary<string, PlayerDatas> playerDatas = new Dictionary<string, PlayerDatas>();
             GameDatas gameDatas = new GameDatas();
-            
+
             _mapi = api;
-            string opPlayer = "XianYuHil";
-            
+
             LoadConf();
 
             api.addAfterActListener(EventKey.onInputText, x =>
@@ -143,14 +207,15 @@ namespace MCPromoter
                 string msg = e.msg;
                 var position = (x: ((int) e.XYZ.x).ToString(), y: ((int) e.XYZ.y).ToString(),
                     z: ((int) e.XYZ.z).ToString(), world: e.dimension);
-                
-                if (msg.ToCharArray()[0] == '@')
+
+                if (msg.StartsWith(prefix))
                 {
                     api.logout($"[MCP]<{name}>{msg}");
                     string[] argsList = msg.Split(' ');
+                    argsList[0] = argsList[0].Replace(prefix, "");
                     switch (argsList[0])
                     {
-                        case "@mcp":
+                        case "mcp":
                             if (argsList.Length > 1)
                             {
                                 switch (argsList[1])
@@ -170,6 +235,7 @@ namespace MCPromoter
                                         {
                                             StandardizedFeedback(name, helpText);
                                         }
+
                                         break;
                                     case "initialize":
                                         api.runcmd("scoreboard objectives add Killed dummy §l§7击杀榜");
@@ -194,18 +260,19 @@ namespace MCPromoter
                             {
                                 StandardizedFeedback(name, "无效的@mcp指令，请使用@MCP status获取帮助");
                             }
+
                             break;
-                        case "@=":
-                            string expression = msg.Remove(0, 3);
+                        case "=":
+                            string expression = msg.Replace($"{prefix}= ","");
                             string result = new DataTable().Compute(expression, "").ToString();
                             StandardizedFeedback(name, result);
                             break;
-                        case "@here":
+                        case "here":
                             api.runcmd("playsound random.levelup @a");
                             StandardizedFeedback("@a",
                                 $"§e§l{name}§r在{position.world}§e§l[{position.x},{position.y},{position.z}]§r向大家打招呼！");
                             break;
-                        case "@back":
+                        case "back":
                             if (playerDatas[name].DeadEnable)
                             {
                                 if (playerDatas[name].DeadWorld == position.world)
@@ -225,7 +292,7 @@ namespace MCPromoter
                             }
 
                             break;
-                        case "@bot":
+                        case "bot":
                             if (argsList[1] == "list")
                             {
                                 api.runcmd("say 服务器内存在机器人@e[tag=BOT]");
@@ -249,10 +316,11 @@ namespace MCPromoter
                                     api.runcmd($"tp {name} @e[name=bot_{botName}");
                                 }
                             }
+
                             break;
-                        case "@ban":
+                        case "ban":
                             string bannedName = argsList[1];
-                            if (name == opPlayer)
+                            if (adminNames.Contains(name))
                             {
                                 api.runcmd($"kick {bannedName} {bannedName}，您已被{name}永久封禁。");
                                 api.runcmd($"whitelist remove {bannedName}");
@@ -260,11 +328,11 @@ namespace MCPromoter
                             }
                             else
                             {
-                                api.runcmd($"kick {name} 您试图越权使用@ban指令封禁{bannedName}，自动踢出");
-                                StandardizedFeedback("@a",$"{name}试图越权使用@ban指令封禁{bannedName}，自动踢出");
+                                StandardizedFeedback(name,"@ban需要admin权限才可使用，您当前无权使用该指令。");
                             }
+
                             break;
-                        case "@day":
+                        case "day":
                             if (argsList[1] == "game")
                             {
                                 api.runcmd("time query day");
@@ -282,8 +350,9 @@ namespace MCPromoter
                                     ((int) nowDate.Subtract(gameDatas.OpeningDate).TotalDays).ToString();
                                 StandardizedFeedback(name, $"今天是开服的第{serverDay}天.");
                             }
+
                             break;
-                        case "@item":
+                        case "item":
                             if (argsList[1] == "pick")
                             {
                                 api.runcmd($"tp @e[type=item] {name}");
@@ -309,7 +378,7 @@ namespace MCPromoter
                             }
 
                             break;
-                        case "@entity":
+                        case "entity":
                             if (argsList[1] == "count")
                             {
                                 api.runcmd("scoreboard players set @e _CounterCache 1");
@@ -328,7 +397,7 @@ namespace MCPromoter
                             }
 
                             break;
-                        case "@ki":
+                        case "ki":
                             if (argsList[1] == "status")
                             {
                                 api.runcmd("gamerule keepinventory");
@@ -336,30 +405,32 @@ namespace MCPromoter
                                 Task.Run(async delegate
                                 {
                                     await Task.Delay(1000);
-                                    StandardizedFeedback(name,$"当前死亡不掉落{gameDatas.KiStatus}");
+                                    StandardizedFeedback(name, $"当前死亡不掉落{gameDatas.KiStatus}");
                                 });
                             }
-                            else if(argsList[1]=="true")
+                            else if (argsList[1] == "true")
                             {
                                 api.runcmd("gamerule keepinventory true");
                                 StandardizedFeedback(name, "死亡不掉落已开启");
                             }
-                            else if(argsList[1]=="false")
+                            else if (argsList[1] == "false")
                             {
                                 api.runcmd("gamerule keepinventory false");
                                 StandardizedFeedback(name, "死亡不掉落已关闭");
                             }
+
                             break;
-                        case "@kill":
-                            string[] suicideMsg = {
-                                
-                            };
+                        case "kill":
                             playerDatas[name].IsSuicide = true;
                             api.runcmd($"kill {name}");
-                            Random suicideMsgNum = new Random();
-                            StandardizedFeedback("@a",suicideMsg[suicideMsgNum.Next(0, 17)]);
+                            for (int i = 0; i < suicideMsgs.Length; i++)
+                            {
+                                suicideMsgs[i] = suicideMsgs[i].Replace("{name}",name);
+                            }
+                            int suicideMsgNum = new Random().Next(0, suicideMsgs.Length);
+                            StandardizedFeedback("@a", suicideMsgs[suicideMsgNum]);
                             break;
-                        case "@mg":
+                        case "mg":
                             if (argsList[1] == "status")
                             {
                                 api.runcmd("gamerule mobGriefing");
@@ -367,35 +438,41 @@ namespace MCPromoter
                                 Task.Run(async delegate
                                 {
                                     await Task.Delay(1000);
-                                    StandardizedFeedback(name,$"当前生物破坏{gameDatas.MgStatus}");
+                                    StandardizedFeedback(name, $"当前生物破坏{gameDatas.MgStatus}");
                                 });
                             }
-                            else if(argsList[1]=="true")
+                            else if (argsList[1] == "true")
                             {
                                 api.runcmd("gamerule mobGriefing true");
                                 StandardizedFeedback(name, "生物破坏已开启");
                             }
-                            else if(argsList[1]=="false")
+                            else if (argsList[1] == "false")
                             {
                                 api.runcmd("gamerule mobGriefing false");
                                 StandardizedFeedback(name, "生物破坏已关闭");
                             }
+
                             break;
-                        case "@rc":
-                            if (name == opPlayer)
+                        case "rc":
+                            if (adminNames.Contains(name))
                             {
-                                string command = msg.Remove(0, 4);
+                                string command = msg.Replace($"{prefix}rc ", "");
                                 bool cmdResult = api.runcmd(command);
                                 StandardizedFeedback(name, cmdResult ? $"已成功向控制台注入了{command}" : $"{command}运行失败");
                             }
+                            else
+                            {
+                                StandardizedFeedback(name,"@rc需要admin权限才可使用，您当前无权使用该指令。");
+                            }
+
                             break;
-                        case "@size":
-                            string worldSize = ((int)(GetWorldSize($@"worlds\{worldName}")/1024/1024)).ToString();
-                            StandardizedFeedback(name,$"当前服务器的存档大小是§l§6{worldSize}§7MB");
+                        case "size":
+                            string worldSize = ((int) (GetWorldSize($@"worlds\{worldName}") / 1024 / 1024)).ToString();
+                            StandardizedFeedback(name, $"当前服务器的存档大小是§l§6{worldSize}§7MB");
                             break;
-                        case "@sta":
+                        case "sta":
                             string statisName = argsList[1];
-                            Dictionary<string,string> cnStatisName = new Dictionary<string, string>
+                            Dictionary<string, string> cnStatisName = new Dictionary<string, string>
                             {
                                 {"Dig", "挖掘榜"},
                                 {"Placed", "放置榜"},
@@ -417,8 +494,9 @@ namespace MCPromoter
                                 api.runcmd("scoreboard objectives setdisplay sidebar");
                                 StandardizedFeedback(name, "已关闭侧边栏显示");
                             }
+
                             break;
-                        case "@task":
+                        case "task":
                             string taskName = argsList[2];
                             if (argsList[1] == "add")
                             {
@@ -430,8 +508,9 @@ namespace MCPromoter
                                 api.runcmd($"scoreboard players reset {taskName} Tasks");
                                 StandardizedFeedback(name, $"已将§l{taskName}§r从待办事项板上移除");
                             }
+
                             break;
-                        case "@tick":
+                        case "tick":
                             if (argsList[1] == "status")
                             {
                                 api.runcmd("gamerule randomtickspeed");
@@ -441,14 +520,15 @@ namespace MCPromoter
                                     StandardizedFeedback(name, $"现在的游戏随机刻为{gameDatas.TickStatus}");
                                 });
                             }
-                            else if (int.TryParse(argsList[1],out int tickSpeed))
+                            else if (int.TryParse(argsList[1], out int tickSpeed))
                             {
                                 api.runcmd($"gamerule randomtickspeed {tickSpeed}");
                                 StandardizedFeedback(name, $"已将游戏内随机刻修改为{tickSpeed}。");
                             }
+
                             break;
-                        case "@quicksleep":
-                            
+                        case "quicksleep":
+
                             break;
                         default:
                             StandardizedFeedback(name, "无效的MCP指令，请输入@mcp help获取帮助");
@@ -463,7 +543,7 @@ namespace MCPromoter
             {
                 var e = BaseEvent.getFrom(x) as MobDieEvent;
                 if (e == null) return true;
-                
+
                 string attackName = e.srcname;
                 string attackType = e.srctype;
                 string deadName = e.mobname;
@@ -502,7 +582,7 @@ namespace MCPromoter
             {
                 var e = BaseEvent.getFrom(x) as DestroyBlockEvent;
                 if (e == null) return true;
-                
+
                 string name = e.playername;
                 if (!string.IsNullOrEmpty(name))
                 {
@@ -516,7 +596,7 @@ namespace MCPromoter
             {
                 var e = BaseEvent.getFrom(x) as PlacedBlockEvent;
                 if (e == null) return true;
-                
+
                 string name = e.playername;
                 if (!string.IsNullOrEmpty(name))
                 {
@@ -530,7 +610,7 @@ namespace MCPromoter
             {
                 var e = BaseEvent.getFrom(x) as UseItemEvent;
                 if (e == null) return true;
-                
+
                 string name = e.playername;
                 if (!string.IsNullOrEmpty(name))
                 {
@@ -544,7 +624,7 @@ namespace MCPromoter
             {
                 var e = BaseEvent.getFrom(x) as ServerCmdOutputEvent;
                 if (e == null) return true;
-                
+
                 string output = e.output;
                 if (output.StartsWith("Day is "))
                 {
@@ -604,49 +684,65 @@ namespace MCPromoter
             {
                 var e = BaseEvent.getFrom(x) as InputCommandEvent;
                 if (e == null) return true;
-                
+
                 string name = e.playername;
                 string cmd = e.cmd;
                 api.logout($"[MCP]<{name}>{cmd}");
-                string[] allowedCmds = {"/?", "/help", "/list", "/me", "/mixer", "/msg", "/tell", "/w", "/tickingarea", "/tp"};
-                foreach (var allowedCmd in allowedCmds)
+                if (antiCheat)
                 {
-                    if (cmd.Contains(allowedCmd))
+                    foreach (var allowedCmd in allowedCmds)
                     {
-                        return true;
+                        if (cmd.StartsWith(allowedCmd))
+                        {
+                            return true;
+                        }
                     }
-                }
 
-                api.runcmd($"kick {name} 试图违规使用{cmd}被踢出");
-                StandardizedFeedback("@a", $"{name}试图违规使用{cmd}被踢出");
-                return false;
+                    api.runcmd($"kick {name} 试图违规使用{cmd}被踢出");
+                    StandardizedFeedback("@a", $"{name}试图违规使用{cmd}被踢出");
+                    return false;
+                }
+                else return true;
             });
 
             api.addAfterActListener(EventKey.onLoadName, x =>
             {
                 var e = BaseEvent.getFrom(x) as LoadNameEvent;
                 if (e == null) return true;
-                
+
                 string name = e.playername;
                 string uuid = e.uuid;
 
-                if (playerDatas.ContainsKey(name))
+                if (whitelistNames.Contains(name) && whitelistUuids.Contains(uuid))
                 {
-                    playerDatas[name].IsOnline = true;
+                    if (playerDatas.ContainsKey(name))
+                    {
+                        playerDatas[name].IsOnline = true;
+                    }
+                    else
+                    {
+                        playerDatas.Add(name, new PlayerDatas {Name = name, Uuid = uuid});
+                        api.logout($"[MCP]新实例化用于存储{name}信息的PlayerDatas类");
+                    }
+
+                    return true;
                 }
                 else
                 {
-                    playerDatas.Add(name, new PlayerDatas {Name = name, Uuid = uuid});
-                    api.logout($"[MCP]新实例化用于存储{name}信息的PlayerDatas类");
+                    Task.Run(async delegate
+                    {
+                        await Task.Delay(1000);
+                        api.runcmd($"kick {name} 您未受邀加入该服务器，详情请咨询Hil。");
+                    });
+                    return true;
                 }
-                return true;
             });
 
             api.addAfterActListener(EventKey.onPlayerLeft, x =>
             {
                 var e = BaseEvent.getFrom(x) as PlayerLeftEvent;
                 if (e == null) return true;
-                
+
                 string name = e.playername;
                 playerDatas[name].IsOnline = false;
                 return true;
@@ -661,7 +757,7 @@ namespace CSR
     {
         public static void onStart(MCCSAPI api)
         {
-            var pluginInfo = (Name: "MinecraftPromoter", Version: "V1.1.1", Author: "XianYu_Hil");
+            var pluginInfo = (Name: "MinecraftPromoter", Version: "V1.2.0", Author: "XianYu_Hil");
             MCPromoter.MCPromoter.Init(api, pluginInfo);
             Console.WriteLine($"[{pluginInfo.Name} - {pluginInfo.Version}]Loaded.");
         }
