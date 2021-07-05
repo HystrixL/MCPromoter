@@ -427,7 +427,7 @@ namespace MCPromoter
                             api.runcmd($"kill {name}");
                             for (int i = 0; i < suicideMsgs.Length; i++)
                             {
-                                suicideMsgs[i] = suicideMsgs[i].Replace("{}", name);
+                                suicideMsgs[i] = suicideMsgs[i].Replace("{}", $"§l{name}§r");
                             }
 
                             int suicideMsgNum = new Random().Next(0, suicideMsgs.Length);
