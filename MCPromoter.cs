@@ -17,6 +17,7 @@ namespace MCPromoter
     {
         public string Name { get; set; }
         public string Uuid { get; set; }
+        public string Xuid { get; set; }
         public bool IsSuicide { get; set; }
         public bool DeadEnable { get; set; }
         public string DeadX { get; set; }
@@ -73,7 +74,7 @@ namespace MCPromoter
         private static MCCSAPI _mapi;
 
         private static string[] whitelistNames;
-        private static string[] whitelistUuids;
+        private static string[] whitelistXuids;
         private static string[] adminNames;
         private static string[] suicideMsgs;
         private static string[] allowedCmds;
@@ -154,12 +155,13 @@ namespace MCPromoter
             iniFile.IniWriteValue("Config", "WorldName", "");
             iniFile.IniWriteValue("Config", "AntiCheat", "true");
             iniFile.IniWriteValue("WhiteList", "PlayerNames", "");
-            iniFile.IniWriteValue("WhiteList", "PlayerUuids", "");
+            iniFile.IniWriteValue("WhiteList", "PlayerXuids", "");
             iniFile.IniWriteValue("WhiteList", "AdminNames", "");
             iniFile.IniWriteValue("WhiteList", "AllowedCmds", "");
             iniFile.IniWriteValue("Customization", "SuicideMsgs", "");
             iniFile.IniWriteValue("Customization", "Prefix", "@");
 
+            _mapi.logout(@"[MCP]已完成插件配置文件的初始化。配置文件位于CSR\MCP\config.ini");
             LoadConf();
         }
 
@@ -173,8 +175,8 @@ namespace MCPromoter
 
                 string _whitelistNames = iniFile.IniReadValue("WhiteList", "PlayerNames");
                 whitelistNames = _whitelistNames.Split(';');
-                string _whitelistUuids = iniFile.IniReadValue("WhiteList", "PlayerUuids");
-                whitelistUuids = _whitelistUuids.Split(';');
+                string _whitelistXuids = iniFile.IniReadValue("WhiteList", "PlayerXuids");
+                whitelistXuids = _whitelistXuids.Split(';');
                 string _adminNames = iniFile.IniReadValue("WhiteList", "AdminNames");
                 adminNames = _adminNames.Split(';');
                 string _allowedCmds = iniFile.IniReadValue("WhiteList", "AllowedCmds");
@@ -183,6 +185,7 @@ namespace MCPromoter
                 string _suicideMsgs = iniFile.IniReadValue("Customization", "SuicideMsgs");
                 suicideMsgs = _suicideMsgs.Split(';');
                 prefix = iniFile.IniReadValue("Customization", "Prefix");
+                _mapi.logout("[MCP]已载入配置文件。");
             }
             else
             {
@@ -712,31 +715,29 @@ namespace MCPromoter
 
                 string name = e.playername;
                 string uuid = e.uuid;
+                string xuid = e.xuid;
 
-                if (whitelistNames.Contains(name) && whitelistUuids.Contains(uuid))
+                if (playerDatas.ContainsKey(name))
                 {
-                    if (playerDatas.ContainsKey(name))
-                    {
-                        playerDatas[name].IsOnline = true;
-                    }
-                    else
-                    {
-                        playerDatas.Add(name, new PlayerDatas {Name = name, Uuid = uuid});
-                        api.logout($"[MCP]新实例化用于存储{name}信息的PlayerDatas类");
-                    }
-
-                    return true;
+                    playerDatas[name].IsOnline = true;
                 }
                 else
+                {
+                    playerDatas.Add(name, new PlayerDatas {Name = name, Uuid = uuid,Xuid = xuid});
+                    api.logout($"[MCP]新实例化用于存储{name}信息的PlayerDatas类");
+                }
+                
+                if (!(whitelistNames.Contains(name) && whitelistXuids.Contains(xuid)))
                 {
                     Task.Run(async delegate
                     {
                         await Task.Delay(1000);
                         api.runcmd($"kick {name} 您未受邀加入该服务器，详情请咨询Hil。");
+                        api.logout($"[MCP]{name}未受邀加入该服务器，已自动踢出。");
                     });
-                    return true;
                 }
-            });
+                return true;
+                });
 
             api.addAfterActListener(EventKey.onPlayerLeft, x =>
             {
@@ -757,7 +758,7 @@ namespace CSR
     {
         public static void onStart(MCCSAPI api)
         {
-            var pluginInfo = (Name: "MinecraftPromoter", Version: "V1.2.0", Author: "XianYu_Hil");
+            var pluginInfo = (Name: "MinecraftPromoter", Version: "V1.2.3", Author: "XianYu_Hil");
             MCPromoter.MCPromoter.Init(api, pluginInfo);
             Console.WriteLine($"[{pluginInfo.Name} - {pluginInfo.Version}]Loaded.");
         }
