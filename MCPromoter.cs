@@ -61,8 +61,8 @@ namespace MCPromoter
 
         public string IniReadValue(string section, string key)
         {
-            StringBuilder temp = new StringBuilder(255);
-            int i = GetPrivateProfileString(section, key, "", temp, 255, _path);
+            StringBuilder temp = new StringBuilder(32767);
+            int i = GetPrivateProfileString(section, key, "", temp, 32767, _path);
             return temp.ToString();
         }
     }
@@ -822,7 +822,7 @@ namespace CSR
     {
         public static void onStart(MCCSAPI api)
         {
-            var pluginInfo = (Name: "MinecraftPromoter", Version: "V1.4.0", Author: "XianYu_Hil");
+            var pluginInfo = (Name: "MinecraftPromoter", Version: "V1.4.1", Author: "XianYu_Hil");
             MCPromoter.MCPromoter.Init(api, pluginInfo);
             Console.WriteLine($"[{pluginInfo.Name} - {pluginInfo.Version}]Loaded.");
         }
