@@ -8,9 +8,18 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CSR;
+using MCPromoter;
 
 namespace MCPromoter
 {
+    public static class PluginInfo
+    {
+        public static string Name => "MinecraftPromoter";
+        public static string Version => "V1.4.2";
+        public static string Author => "XianYu_Hil";
+    }
+    
+    
     class PlayerDatas
     {
         public string Name { get; set; }
@@ -30,12 +39,18 @@ namespace MCPromoter
     {
         public string GameDay { get; set; }
         public string GameTime { get; set; }
-        public DateTime OpeningDate { get; } = DateTime.Parse("2021-6-14 12:00:00");
+        public DateTime OpeningDate { get; }
         public string TickStatus { get; set; }
         public string MgStatus { get; set; }
         public string KiStatus { get; set; }
         public string EntityCounter { get; set; }
         public string ItemCounter { get; set; }
+
+        public GameDatas()
+        {
+            IniFile iniFile = new IniFile(@"CSR\MCP\config.ini");
+            OpeningDate = DateTime.Parse(iniFile.IniReadValue("Config", "ServerStartDate"));
+        }
     }
 
     class IniFile
@@ -150,6 +165,7 @@ namespace MCPromoter
             fileStream.Close();
             iniFile.IniWriteValue("Config", "WorldName", "");
             iniFile.IniWriteValue("Config", "AntiCheat", "true");
+            iniFile.IniWriteValue("Config","ServerStartDate",DateTime.Now.ToString());
             iniFile.IniWriteValue("WhiteList", "PlayerNames", "");
             iniFile.IniWriteValue("WhiteList", "PlayerXuids", "");
             iniFile.IniWriteValue("WhiteList", "AdminNames", "");
@@ -189,7 +205,7 @@ namespace MCPromoter
             }
         }
 
-        public static void Init(MCCSAPI api, (string Name, string Version, string Author) pluginInfo)
+        public static void Init(MCCSAPI api)
         {
             Dictionary<string, PlayerDatas> playerDatas = new Dictionary<string, PlayerDatas>();
             GameDatas gameDatas = new GameDatas();
@@ -222,8 +238,8 @@ namespace MCPromoter
                                 {
                                     case "status":
                                         StandardizedFeedback(name, "§2========================");
-                                        StandardizedFeedback(name, $"§c§l{pluginInfo.Name} - {pluginInfo.Version}");
-                                        StandardizedFeedback(name, $"§o作者：{pluginInfo.Author}");
+                                        StandardizedFeedback(name, $"§c§l{PluginInfo.Name} - {PluginInfo.Version}");
+                                        StandardizedFeedback(name, $"§o作者：{PluginInfo.Author}");
                                         StandardizedFeedback(name, "§2========================");
                                         StandardizedFeedback(name, $"{prefix}mcp help      获取MCP模块帮助");
                                         StandardizedFeedback(name, $"{prefix}mcp initialize        初始化MCP模块");
@@ -822,9 +838,8 @@ namespace CSR
     {
         public static void onStart(MCCSAPI api)
         {
-            var pluginInfo = (Name: "MinecraftPromoter", Version: "V1.4.1", Author: "XianYu_Hil");
-            MCPromoter.MCPromoter.Init(api, pluginInfo);
-            Console.WriteLine($"[{pluginInfo.Name} - {pluginInfo.Version}]Loaded.");
+            MCPromoter.MCPromoter.Init(api);
+            Console.WriteLine($"[{PluginInfo.Name} - {PluginInfo.Version}]Loaded.");
         }
     }
 }
