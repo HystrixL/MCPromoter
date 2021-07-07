@@ -15,11 +15,11 @@ namespace MCPromoter
     public static class PluginInfo
     {
         public static string Name => "MinecraftPromoter";
-        public static string Version => "V1.4.2";
+        public static string Version => "V1.5.0";
         public static string Author => "XianYu_Hil";
     }
-    
-    
+
+
     class PlayerDatas
     {
         public string Name { get; set; }
@@ -89,6 +89,7 @@ namespace MCPromoter
         private static string[] whitelistNames;
         private static string[] whitelistXuids;
         private static string[] adminNames;
+        private static string[] adminCmds;
         private static string[] suicideMsgs;
         private static string[] allowedCmds;
         private static bool antiCheat;
@@ -165,10 +166,11 @@ namespace MCPromoter
             fileStream.Close();
             iniFile.IniWriteValue("Config", "WorldName", "");
             iniFile.IniWriteValue("Config", "AntiCheat", "true");
-            iniFile.IniWriteValue("Config","ServerStartDate",DateTime.Now.ToString());
+            iniFile.IniWriteValue("Config", "ServerStartDate", DateTime.Now.ToString());
             iniFile.IniWriteValue("WhiteList", "PlayerNames", "");
             iniFile.IniWriteValue("WhiteList", "PlayerXuids", "");
             iniFile.IniWriteValue("WhiteList", "AdminNames", "");
+            iniFile.IniWriteValue("WhiteList", "AdminCmds", "rc;whitelist;mcp setting");
             iniFile.IniWriteValue("WhiteList", "AllowedCmds", "/help");
             iniFile.IniWriteValue("Customization", "SuicideMsgs", "");
             iniFile.IniWriteValue("Customization", "Prefix", "@");
@@ -191,6 +193,8 @@ namespace MCPromoter
                 whitelistXuids = _whitelistXuids.Split(';');
                 string _adminNames = iniFile.IniReadValue("WhiteList", "AdminNames");
                 adminNames = _adminNames.Split(';');
+                string _adminCmds = iniFile.IniReadValue("WhiteList", "AdminCmds");
+                adminCmds = _adminCmds.Split(';');
                 string _allowedCmds = iniFile.IniReadValue("WhiteList", "AllowedCmds");
                 allowedCmds = _allowedCmds.Split(';');
 
@@ -229,6 +233,15 @@ namespace MCPromoter
                     api.logout($"[MCP]<{name}>{msg}");
                     string[] argsList = msg.Split(' ');
                     argsList[0] = argsList[0].Replace(prefix, "");
+                    foreach (var adminCmd in adminCmds)
+                    {
+                        if (msg.Replace(prefix, "").StartsWith(adminCmd) && !adminNames.Contains(name))
+                        {
+                            StandardizedFeedback(name, $"{msg}需要admin权限才可使用，您当前无权使用该指令。");
+                            return true;
+                        }
+                    }
+
                     switch (argsList[0])
                     {
                         case "mcp":
@@ -243,14 +256,15 @@ namespace MCPromoter
                                         StandardizedFeedback(name, "§2========================");
                                         StandardizedFeedback(name, $"{prefix}mcp help      获取MCP模块帮助");
                                         StandardizedFeedback(name, $"{prefix}mcp initialize        初始化MCP模块");
-                                        StandardizedFeedback(name, $"{prefix}mcp setting [option] [value]       修改MCP模块设置");
+                                        StandardizedFeedback(name,
+                                            $"{prefix}mcp setting [option] [value]       修改MCP模块设置");
                                         StandardizedFeedback(name, $"{prefix}mcp setting reload      重载MCP配置文件");
                                         StandardizedFeedback(name, "§2========================");
                                         break;
                                     case "help":
                                         foreach (var helpText in helpTexts)
                                         {
-                                            StandardizedFeedback(name, prefix+helpText);
+                                            StandardizedFeedback(name, prefix + helpText);
                                         }
 
                                         break;
@@ -267,19 +281,35 @@ namespace MCPromoter
                                         api.runcmd("scoreboard objectives add Counter dummy");
                                         break;
                                     case "setting":
-                                        if (adminNames.Contains(name))
+                                        switch (argsList[2])
                                         {
-                                            switch (argsList[2])
-                                            {
-                                                case "reload":
-                                                    LoadConf();
-                                                    StandardizedFeedback("@a", "[MCP]配置文件已重新载入。");
-                                                    break;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            StandardizedFeedback(name, $"{prefix}mcp setting需要admin权限才可使用，您当前无权使用该指令。");
+                                            case "prefix":
+                                                string newPrefix = argsList[3];
+                                                iniFile.IniWriteValue("Customization", "Prefix", newPrefix);
+                                                StandardizedFeedback("@a", $"MCP指令前缀已被{name}从{prefix}修改为{newPrefix}");
+                                                StandardizedFeedback(name,
+                                                    $"已将MCP指令前缀修改为{newPrefix},请使用{prefix}mcp setting reload重载配置文件以生效");
+                                                break;
+                                            case "anticheat":
+                                                string newAnticheat = argsList[3];
+                                                if (newAnticheat == "true" || newAnticheat == "false")
+                                                {
+                                                    iniFile.IniWriteValue("Config", "AntiCheat", newAnticheat);
+                                                    StandardizedFeedback("@a",
+                                                        newAnticheat == "true" ? $"{name}已开启反作弊系统" : $"{name}已关闭反作弊系统");
+                                                    StandardizedFeedback(name,
+                                                        $"已将反作弊系统状态调整为{newAnticheat},请使用{prefix}mcp setting reload重载配置文件以生效");
+                                                }
+                                                else
+                                                {
+                                                    StandardizedFeedback(name, "仅允许使用true或false来设置反作弊系统状态");
+                                                }
+
+                                                break;
+                                            case "reload":
+                                                LoadConf();
+                                                StandardizedFeedback("@a", "[MCP]配置文件已重新载入。");
+                                                break;
                                         }
 
                                         break;
@@ -418,7 +448,7 @@ namespace MCPromoter
                         case "ki":
                             if (argsList[1] == "status")
                             {
-                                api.runcmd("gamerule keepinventory");
+                                api.runcmd("gamerule keepInventory");
 
                                 Task.Run(async delegate
                                 {
@@ -428,12 +458,12 @@ namespace MCPromoter
                             }
                             else if (argsList[1] == "true")
                             {
-                                api.runcmd("gamerule keepinventory true");
+                                api.runcmd("gamerule keepInventory true");
                                 StandardizedFeedback(name, "死亡不掉落已开启");
                             }
                             else if (argsList[1] == "false")
                             {
-                                api.runcmd("gamerule keepinventory false");
+                                api.runcmd("gamerule keepInventory false");
                                 StandardizedFeedback(name, "死亡不掉落已关闭");
                             }
 
@@ -473,16 +503,9 @@ namespace MCPromoter
 
                             break;
                         case "rc":
-                            if (adminNames.Contains(name))
-                            {
-                                string command = msg.Replace($"{prefix}rc ", "");
-                                bool cmdResult = api.runcmd(command);
-                                StandardizedFeedback(name, cmdResult ? $"已成功向控制台注入了{command}" : $"{command}运行失败");
-                            }
-                            else
-                            {
-                                StandardizedFeedback(name, $"{prefix}rc需要admin权限才可使用，您当前无权使用该指令。");
-                            }
+                            string command = msg.Replace($"{prefix}rc ", "");
+                            bool cmdResult = api.runcmd(command);
+                            StandardizedFeedback(name, cmdResult ? $"已成功向控制台注入了{command}" : $"{command}运行失败");
 
                             break;
                         case "size":
@@ -547,65 +570,60 @@ namespace MCPromoter
 
                             break;
                         case "whitelist":
-                            if (adminNames.Contains(name))
+                            string newName = argsList[2];
+                            if (argsList[1] == "add")
                             {
-                                string newName = argsList[2];
-                                if (argsList[1] == "add")
+                                if (whitelistNames.Contains(newName))
                                 {
-                                    if (whitelistNames.Contains(newName))
-                                    {
-                                        StandardizedFeedback(name, $"白名单中已存在玩家{newName}");
-                                    }
-                                    else
-                                    {
-                                        if (playerDatas.ContainsKey(newName))
-                                        {
-                                            string _whitelistName = string.Join(";", whitelistNames);
-                                            _whitelistName = _whitelistName + ";" + newName;
-                                            string _whitelistXuid = string.Join(";", whitelistXuids);
-                                            _whitelistXuid = _whitelistXuid + ";" + playerDatas[newName].Xuid;
-                                            iniFile.IniWriteValue("WhiteList", "PlayerNames", _whitelistName);
-                                            iniFile.IniWriteValue("WhiteList", "PlayerXuids", _whitelistXuid);
-                                            StandardizedFeedback("@a",$"{name}已将{newName}加入白名单。");
-                                            StandardizedFeedback(name,$"已将{newName}加入白名单，请使用{prefix}mcp setting reload重载配置文件以生效");
-                                        }
-                                        else
-                                        {
-                                            StandardizedFeedback(name,$"{newName}未曾尝试加入过服务器，请让其尝试加入服务器后再添加白名单");
-                                        }
-                                    }
+                                    StandardizedFeedback(name, $"白名单中已存在玩家{newName}");
                                 }
-                                else if (argsList[1] == "remove")
+                                else
                                 {
-                                    if (whitelistNames.Contains(newName))
+                                    if (playerDatas.ContainsKey(newName))
                                     {
-                                        if (playerDatas.ContainsKey(newName))
-                                        {
-                                            string _whitelistName = string.Join(";", whitelistNames);
-                                            _whitelistName = _whitelistName.Replace(";" + newName, "");
-                                            string _whitelistXuid = string.Join(";", whitelistXuids);
-                                            _whitelistXuid =
-                                                _whitelistXuid.Replace(";" + playerDatas[newName].Xuid, "");
-                                            iniFile.IniWriteValue("WhiteList", "PlayerNames", _whitelistName);
-                                            iniFile.IniWriteValue("WhiteList", "PlayerXuids", _whitelistXuid);
-                                            api.runcmd($"kick {newName} 您已被{name}永久封禁。");
-                                            StandardizedFeedback("@a",$"{newName}已被{name}永久封禁。");
-                                            StandardizedFeedback(name,$"已将{newName}移出白名单，请使用{prefix}mcp setting reload重载配置文件以生效");
-                                        }
-                                        else
-                                        {
-                                            StandardizedFeedback(name,$"{newName}未曾加入过服务器，请让其加入服务器后再移除白名单");
-                                        }
+                                        string _whitelistName = string.Join(";", whitelistNames);
+                                        _whitelistName = _whitelistName + ";" + newName;
+                                        string _whitelistXuid = string.Join(";", whitelistXuids);
+                                        _whitelistXuid = _whitelistXuid + ";" + playerDatas[newName].Xuid;
+                                        iniFile.IniWriteValue("WhiteList", "PlayerNames", _whitelistName);
+                                        iniFile.IniWriteValue("WhiteList", "PlayerXuids", _whitelistXuid);
+                                        StandardizedFeedback("@a", $"{name}已将{newName}加入白名单。");
+                                        StandardizedFeedback(name,
+                                            $"已将{newName}加入白名单，请使用{prefix}mcp setting reload重载配置文件以生效");
                                     }
                                     else
                                     {
-                                        StandardizedFeedback(name, $"白名单中不存在玩家{newName}");
+                                        StandardizedFeedback(name, $"{newName}未曾尝试加入过服务器，请让其尝试加入服务器后再添加白名单");
                                     }
                                 }
                             }
-                            else
+                            else if (argsList[1] == "remove")
                             {
-                                StandardizedFeedback(name, $"{prefix}whitelist需要admin权限才可使用，您当前无权使用该指令。");
+                                if (whitelistNames.Contains(newName))
+                                {
+                                    if (playerDatas.ContainsKey(newName))
+                                    {
+                                        string _whitelistName = string.Join(";", whitelistNames);
+                                        _whitelistName = _whitelistName.Replace(";" + newName, "");
+                                        string _whitelistXuid = string.Join(";", whitelistXuids);
+                                        _whitelistXuid =
+                                            _whitelistXuid.Replace(";" + playerDatas[newName].Xuid, "");
+                                        iniFile.IniWriteValue("WhiteList", "PlayerNames", _whitelistName);
+                                        iniFile.IniWriteValue("WhiteList", "PlayerXuids", _whitelistXuid);
+                                        api.runcmd($"kick {newName} 您已被{name}永久封禁。");
+                                        StandardizedFeedback("@a", $"{newName}已被{name}永久封禁。");
+                                        StandardizedFeedback(name,
+                                            $"已将{newName}移出白名单，请使用{prefix}mcp setting reload重载配置文件以生效");
+                                    }
+                                    else
+                                    {
+                                        StandardizedFeedback(name, $"{newName}未曾加入过服务器，请让其加入服务器后再移除白名单");
+                                    }
+                                }
+                                else
+                                {
+                                    StandardizedFeedback(name, $"白名单中不存在玩家{newName}");
+                                }
                             }
 
                             break;
@@ -720,13 +738,13 @@ namespace MCPromoter
                 {
                     gameDatas.TickStatus = Regex.Replace(output, @"[^0-9]+", "");
                 }
-                else if (output.StartsWith("keepinventory = "))
+                else if (output.StartsWith("keepInventory = "))
                 {
-                    if (output.Contains("keepinventory = true"))
+                    if (output.Contains("keepInventory = true"))
                     {
                         gameDatas.KiStatus = "已开启";
                     }
-                    else if (output.Contains("keepinventory = false"))
+                    else if (output.Contains("keepInventory = false"))
 
                     {
                         gameDatas.KiStatus = "已关闭";
@@ -770,21 +788,18 @@ namespace MCPromoter
                 string name = e.playername;
                 string cmd = e.cmd;
                 api.logout($"[MCP]<{name}>{cmd}");
-                if (antiCheat)
+                if (antiCheat == false) return true;
+                foreach (var allowedCmd in allowedCmds)
                 {
-                    foreach (var allowedCmd in allowedCmds)
+                    if (cmd.StartsWith(allowedCmd))
                     {
-                        if (cmd.StartsWith(allowedCmd))
-                        {
-                            return true;
-                        }
+                        return true;
                     }
-
-                    api.runcmd($"kick {name} 试图违规使用{cmd}被踢出");
-                    StandardizedFeedback("@a", $"{name}试图违规使用{cmd}被踢出");
-                    return false;
                 }
-                else return true;
+
+                api.runcmd($"kick {name} 试图违规使用{cmd}被踢出");
+                StandardizedFeedback("@a", $"{name}试图违规使用{cmd}被踢出");
+                return false;
             });
 
             api.addAfterActListener(EventKey.onLoadName, x =>
