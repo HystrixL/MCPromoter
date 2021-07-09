@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -15,7 +16,7 @@ namespace MCPromoter
     public static class PluginInfo
     {
         public static string Name => "MinecraftPromoter";
-        public static string Version => "V1.5.1";
+        public static string Version => "V1.6.0";
         public static string Author => "XianYu_Hil";
     }
 
@@ -31,6 +32,65 @@ namespace MCPromoter
         public static string ItemCounter { get; set; }
         
     }
+
+    class SystemInfo
+    {
+        [DllImport("kernel32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool GlobalMemoryStatusEx(ref MEMORY_INFO mi);
+        PerformanceCounter cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+
+        [StructLayout(LayoutKind.Sequential)]
+        struct MEMORY_INFO
+        {
+            public uint dwLength;
+            public uint dwMemoryLoad;
+            public ulong ullTotalPhys;
+            public ulong ullAvailPhys;
+            public ulong ullTotalPageFile;
+            public ulong ullAvailPageFile;
+            public ulong ullTotalVirtual;
+            public ulong ullAvailVirtual;
+            public ulong ullAvailExtendedVirtual;
+        }
+
+        MEMORY_INFO GetMemoryStatus()
+        {
+            MEMORY_INFO mi = new MEMORY_INFO();
+            mi.dwLength = (uint)System.Runtime.InteropServices.Marshal.SizeOf(mi);
+            GlobalMemoryStatusEx(ref mi);
+            return mi;
+        }
+
+        ulong GetAvailPhys()
+        {
+            MEMORY_INFO mi = GetMemoryStatus();
+            return mi.ullAvailPhys;
+        }
+
+        ulong GetUsedPhys()
+        {
+            MEMORY_INFO mi = GetMemoryStatus();
+            return (mi.ullTotalPhys - mi.ullAvailPhys);
+        }
+
+        ulong GetTotalPhys()
+        {
+            MEMORY_INFO mi = GetMemoryStatus();
+            return mi.ullTotalPhys;
+        }
+
+        public string GetMemoryUsage()
+        {
+            return ((float) GetUsedPhys() / GetTotalPhys()).ToString("P2");
+        }
+
+        public string GetCpuUsage()
+        {
+            return cpuCounter.NextValue().ToString("f2");
+        }
+    }
+
 
     class PlayerDatas
         {
@@ -90,7 +150,7 @@ namespace MCPromoter
         private static string worldName;
         private static string prefix;
 
-        private static readonly string[] helpTexts =
+        private static readonly string[] HelpTexts =
         {
             "§2========================",
             "= <表达式>    计算表达式并输出",
@@ -110,6 +170,7 @@ namespace MCPromoter
             "size      获取存档大小",
             "sta <计分板名>    将侧边栏显示调整为特定计分板",
             "sta null      关闭侧边栏显示",
+            "system [cpu|memory]    查询服务器CPU/内存占用率",
             "task [add|remove] <任务名>   添加/移除指定任务",
             "tick [倍数|status]      设置/查询随机刻倍数",
             "whitelist [add|remove] <玩家名>     将玩家加入/移出白名单",
@@ -127,6 +188,20 @@ namespace MCPromoter
             _mapi.runcmd($"tickingarea remove loader_{botName}");
             StandardizedFeedback("@a", $"§ebot_{botName} 退出了游戏");
         }
+
+        public static string FormatSize(double size)
+        {
+            double d = (double)size;
+            int i = 0;
+            while ((d > 1024) && (i < 5))
+            {
+                d /= 1024;
+                i++;
+            }
+            string[] unit = { "B", "KB", "MB", "GB", "TB" };
+            return (string.Format("{0} {1}", Math.Round(d, 2), unit[i]));
+        }
+
 
         public static long GetWorldSize(String path)
         {
@@ -257,7 +332,7 @@ namespace MCPromoter
                                         StandardizedFeedback(name, "§2========================");
                                         break;
                                     case "help":
-                                        foreach (var helpText in helpTexts)
+                                        foreach (var helpText in HelpTexts)
                                         {
                                             StandardizedFeedback(name, prefix + helpText);
                                         }
@@ -504,8 +579,9 @@ namespace MCPromoter
 
                             break;
                         case "size":
-                            string worldSize = ((int) (GetWorldSize($@"worlds\{worldName}") / 1024 / 1024)).ToString();
-                            StandardizedFeedback(name, $"当前服务器的存档大小是§l§6{worldSize}§7MB");
+                            //string worldSize = ((int) (GetWorldSize($@"worlds\{worldName}") / 1024 / 1024)).ToString();
+                            string worldSize = FormatSize(GetWorldSize($@"worlds\{worldName}"));
+                            StandardizedFeedback(name, $"当前服务器的存档大小是§l§6{worldSize}");
                             break;
                         case "sta":
                             string statisName = argsList[1];
@@ -532,6 +608,19 @@ namespace MCPromoter
                                 StandardizedFeedback(name, "已关闭侧边栏显示");
                             }
 
+                            break;
+                        case "system":
+                            SystemInfo systemInfo = new SystemInfo();
+                            if (argsList[1] == "cpu")
+                            {
+                                string cpuUsage = systemInfo.GetCpuUsage();
+                                StandardizedFeedback(name, $"当前服务器CPU占用率为§l§6{cpuUsage}");
+                            }
+                            else if (argsList[1] == "memory")
+                            {
+                                string memoryUsage = systemInfo.GetMemoryUsage();
+                                StandardizedFeedback(name, $"当前服务器物理内存占用率为§l§6{memoryUsage}");
+                            }
                             break;
                         case "task":
                             string taskName = argsList[2];
