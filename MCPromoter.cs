@@ -15,44 +15,38 @@ namespace MCPromoter
     public static class PluginInfo
     {
         public static string Name => "MinecraftPromoter";
-        public static string Version => "V1.5.0";
+        public static string Version => "V1.5.1";
         public static string Author => "XianYu_Hil";
     }
 
+    public static class GameDatas
+    {
+        public static string GameDay { get; set; }
+        public static string GameTime { get; set; }
+        public static DateTime OpeningDate { get; set; }
+        public static string TickStatus { get; set; }
+        public static string MgStatus { get; set; }
+        public static string KiStatus { get; set; }
+        public static string EntityCounter { get; set; }
+        public static string ItemCounter { get; set; }
+        
+    }
 
     class PlayerDatas
-    {
-        public string Name { get; set; }
-        public string Uuid { get; set; }
-        public string Xuid { get; set; }
-        public bool IsSuicide { get; set; }
-        public bool DeadEnable { get; set; }
-        public string DeadX { get; set; }
-        public string DeadY { get; set; }
-        public string DeadZ { get; set; }
-        public string DeadWorld { get; set; }
-
-        public bool IsOnline { get; set; } = true;
-    }
-
-    public class GameDatas
-    {
-        public string GameDay { get; set; }
-        public string GameTime { get; set; }
-        public DateTime OpeningDate { get; }
-        public string TickStatus { get; set; }
-        public string MgStatus { get; set; }
-        public string KiStatus { get; set; }
-        public string EntityCounter { get; set; }
-        public string ItemCounter { get; set; }
-
-        public GameDatas()
         {
-            IniFile iniFile = new IniFile(@"CSR\MCP\config.ini");
-            OpeningDate = DateTime.Parse(iniFile.IniReadValue("Config", "ServerStartDate"));
-        }
-    }
+            public string Name { get; set; }
+            public string Uuid { get; set; }
+            public string Xuid { get; set; }
+            public bool IsSuicide { get; set; }
+            public bool DeadEnable { get; set; }
+            public string DeadX { get; set; }
+            public string DeadY { get; set; }
+            public string DeadZ { get; set; }
+            public string DeadWorld { get; set; }
 
+            public bool IsOnline { get; set; } = true;
+        }
+    
     class IniFile
     {
         private readonly string _path;
@@ -200,7 +194,9 @@ namespace MCPromoter
 
                 string _suicideMsgs = iniFile.IniReadValue("Customization", "SuicideMsgs");
                 suicideMsgs = _suicideMsgs.Split(';');
+                
                 prefix = iniFile.IniReadValue("Customization", "Prefix");
+                GameDatas.OpeningDate =  DateTime.Parse(iniFile.IniReadValue("Config", "ServerStartDate"));
                 _mapi.logout("[MCP]已载入配置文件。");
             }
             else
@@ -212,7 +208,6 @@ namespace MCPromoter
         public static void Init(MCCSAPI api)
         {
             Dictionary<string, PlayerDatas> playerDatas = new Dictionary<string, PlayerDatas>();
-            GameDatas gameDatas = new GameDatas();
 
             _mapi = api;
 
@@ -387,7 +382,7 @@ namespace MCPromoter
                                 Task.Run(async delegate
                                 {
                                     await Task.Delay(1000);
-                                    string gameDay = gameDatas.GameDay;
+                                    string gameDay = GameDatas.GameDay;
                                     StandardizedFeedback(name, $"现在是游戏内的第{gameDay}天.");
                                 });
                             }
@@ -395,7 +390,7 @@ namespace MCPromoter
                             {
                                 DateTime nowDate = DateTime.Now;
                                 string serverDay =
-                                    ((int) nowDate.Subtract(gameDatas.OpeningDate).TotalDays).ToString();
+                                    ((int) nowDate.Subtract(GameDatas.OpeningDate).TotalDays).ToString();
                                 StandardizedFeedback(name, $"今天是开服的第{serverDay}天.");
                             }
 
@@ -420,7 +415,7 @@ namespace MCPromoter
                                 Task.Run(async delegate
                                 {
                                     await Task.Delay(1000);
-                                    string itemCount = gameDatas.ItemCounter;
+                                    string itemCount = GameDatas.ItemCounter;
                                     StandardizedFeedback(name, $"当前的掉落物数为{itemCount}");
                                 });
                             }
@@ -435,7 +430,7 @@ namespace MCPromoter
                                 Task.Run(async delegate
                                 {
                                     await Task.Delay(1000);
-                                    string entityCount = gameDatas.EntityCounter;
+                                    string entityCount = GameDatas.EntityCounter;
                                     StandardizedFeedback(name, $"当前的实体数为{entityCount}");
                                 });
                             }
@@ -453,7 +448,7 @@ namespace MCPromoter
                                 Task.Run(async delegate
                                 {
                                     await Task.Delay(1000);
-                                    StandardizedFeedback(name, $"当前死亡不掉落{gameDatas.KiStatus}");
+                                    StandardizedFeedback(name, $"当前死亡不掉落{GameDatas.KiStatus}");
                                 });
                             }
                             else if (argsList[1] == "true")
@@ -487,7 +482,7 @@ namespace MCPromoter
                                 Task.Run(async delegate
                                 {
                                     await Task.Delay(1000);
-                                    StandardizedFeedback(name, $"当前生物破坏{gameDatas.MgStatus}");
+                                    StandardizedFeedback(name, $"当前生物破坏{GameDatas.MgStatus}");
                                 });
                             }
                             else if (argsList[1] == "true")
@@ -559,7 +554,7 @@ namespace MCPromoter
                                 Task.Run(async delegate
                                 {
                                     await Task.Delay(1000);
-                                    StandardizedFeedback(name, $"现在的游戏随机刻为{gameDatas.TickStatus}");
+                                    StandardizedFeedback(name, $"现在的游戏随机刻为{GameDatas.TickStatus}");
                                 });
                             }
                             else if (int.TryParse(argsList[1], out int tickSpeed))
@@ -728,47 +723,47 @@ namespace MCPromoter
                 string output = e.output;
                 if (output.StartsWith("Day is "))
                 {
-                    gameDatas.GameDay = Regex.Replace(output, @"[^0-9]+", "");
+                    GameDatas.GameDay = Regex.Replace(output, @"[^0-9]+", "");
                 }
                 else if (output.StartsWith("Daytime is"))
                 {
-                    gameDatas.GameTime = Regex.Replace(output, @"[^0-9]+", "");
+                    GameDatas.GameTime = Regex.Replace(output, @"[^0-9]+", "");
                 }
                 else if (output.StartsWith("randomtickspeed = "))
                 {
-                    gameDatas.TickStatus = Regex.Replace(output, @"[^0-9]+", "");
+                    GameDatas.TickStatus = Regex.Replace(output, @"[^0-9]+", "");
                 }
                 else if (output.StartsWith("keepInventory = "))
                 {
                     if (output.Contains("keepInventory = true"))
                     {
-                        gameDatas.KiStatus = "已开启";
+                        GameDatas.KiStatus = "已开启";
                     }
                     else if (output.Contains("keepInventory = false"))
 
                     {
-                        gameDatas.KiStatus = "已关闭";
+                        GameDatas.KiStatus = "已关闭";
                     }
                 }
                 else if (output.StartsWith("mobGriefing = "))
                 {
                     if (output.Contains("mobGriefing = true"))
                     {
-                        gameDatas.MgStatus = "已开启";
+                        GameDatas.MgStatus = "已开启";
                     }
                     else if (output.Contains("mobGriefing = false"))
 
                     {
-                        gameDatas.MgStatus = "已关闭";
+                        GameDatas.MgStatus = "已关闭";
                     }
                 }
                 else if (output.Contains("entityCounter"))
                 {
-                    gameDatas.EntityCounter = Regex.Replace(output, @"[^0-9]+", "");
+                    GameDatas.EntityCounter = Regex.Replace(output, @"[^0-9]+", "");
                 }
                 else if (output.Contains("itemCounter"))
                 {
-                    gameDatas.ItemCounter = Regex.Replace(output, @"[^0-9]+", "");
+                    GameDatas.ItemCounter = Regex.Replace(output, @"[^0-9]+", "");
                 }
 
                 string[] blockWords = {"Killed", "Dead", "Dig", "Placed", "Used", "Health", "_CounterCache"};
