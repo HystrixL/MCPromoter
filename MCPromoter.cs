@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
@@ -16,7 +17,7 @@ namespace MCPromoter
     public static class PluginInfo
     {
         public static string Name => "MinecraftPromoter";
-        public static string Version => "V1.6.0";
+        public static string Version => "V1.7.3";
         public static string Author => "XianYu_Hil";
     }
 
@@ -30,7 +31,7 @@ namespace MCPromoter
         public static string KiStatus { get; set; }
         public static string EntityCounter { get; set; }
         public static string ItemCounter { get; set; }
-        
+
     }
 
     class SystemInfo
@@ -57,7 +58,7 @@ namespace MCPromoter
         MEMORY_INFO GetMemoryStatus()
         {
             MEMORY_INFO mi = new MEMORY_INFO();
-            mi.dwLength = (uint)System.Runtime.InteropServices.Marshal.SizeOf(mi);
+            mi.dwLength = (uint)Marshal.SizeOf(mi);
             GlobalMemoryStatusEx(ref mi);
             return mi;
         }
@@ -82,31 +83,31 @@ namespace MCPromoter
 
         public string GetMemoryUsage()
         {
-            return ((float) GetUsedPhys() / GetTotalPhys()).ToString("P2");
+            return ((float)GetUsedPhys() / GetTotalPhys()).ToString("P2");
         }
 
         public string GetCpuUsage()
         {
-            return cpuCounter.NextValue().ToString("f2");
+            return cpuCounter.NextValue().ToString("f2")+"%";
         }
     }
 
 
     class PlayerDatas
-        {
-            public string Name { get; set; }
-            public string Uuid { get; set; }
-            public string Xuid { get; set; }
-            public bool IsSuicide { get; set; }
-            public bool DeadEnable { get; set; }
-            public string DeadX { get; set; }
-            public string DeadY { get; set; }
-            public string DeadZ { get; set; }
-            public string DeadWorld { get; set; }
+    {
+        public string Name { get; set; }
+        public string Uuid { get; set; }
+        public string Xuid { get; set; }
+        public bool IsSuicide { get; set; }
+        public bool DeadEnable { get; set; }
+        public string DeadX { get; set; }
+        public string DeadY { get; set; }
+        public string DeadZ { get; set; }
+        public string DeadWorld { get; set; }
 
-            public bool IsOnline { get; set; } = true;
-        }
-    
+        public bool IsOnline { get; set; } = true;
+    }
+
     class IniFile
     {
         private readonly string _path;
@@ -131,7 +132,7 @@ namespace MCPromoter
         public string IniReadValue(string section, string key)
         {
             StringBuilder temp = new StringBuilder(32767);
-            int i = GetPrivateProfileString(section, key, "", temp, 32767, _path);
+            GetPrivateProfileString(section, key, "", temp, 32767, _path);
             return temp.ToString();
         }
     }
@@ -164,6 +165,8 @@ namespace MCPromoter
             "ki [true|false|status]   开启/关闭/查询死亡不掉落",
             "kill      自杀(不计入死亡榜)",
             "mg [true|false]   开启/关闭生物破坏",
+            "qs     发起快速跳过夜晚投票",
+            "qs [accept|refuse]     同意/拒绝快速跳过夜晚",
             //"@qb [make|back|restart]    快速备份/还原/重启服务器",
             //"@qb time   查询上次备份时间",
             "sh <指令>   向控制台注入指令(需特殊授权)",
@@ -211,7 +214,7 @@ namespace MCPromoter
             {
                 if (fsi is FileInfo)
                 {
-                    length += ((FileInfo) fsi).Length;
+                    length += ((FileInfo)fsi).Length;
                 }
                 else
                 {
@@ -269,9 +272,9 @@ namespace MCPromoter
 
                 string _suicideMsgs = iniFile.IniReadValue("Customization", "SuicideMsgs");
                 suicideMsgs = _suicideMsgs.Split(';');
-                
+
                 prefix = iniFile.IniReadValue("Customization", "Prefix");
-                GameDatas.OpeningDate =  DateTime.Parse(iniFile.IniReadValue("Config", "ServerStartDate"));
+                GameDatas.OpeningDate = DateTime.Parse(iniFile.IniReadValue("Config", "ServerStartDate"));
                 _mapi.logout("[MCP]已载入配置文件。");
             }
             else
@@ -284,6 +287,11 @@ namespace MCPromoter
         {
             Dictionary<string, PlayerDatas> playerDatas = new Dictionary<string, PlayerDatas>();
 
+            ArrayList onlinePlayer = new ArrayList();
+            ArrayList acceptPlayer = new ArrayList();
+            bool IsQuickSleep = false;
+            string QuickSleepName = "";
+
             _mapi = api;
 
             IniFile iniFile = new IniFile(@"CSR\MCP\config.ini");
@@ -295,8 +303,8 @@ namespace MCPromoter
                 if (e == null) return true;
                 string name = e.playername;
                 string msg = e.msg;
-                var position = (x: ((int) e.XYZ.x).ToString(), y: ((int) e.XYZ.y).ToString(),
-                    z: ((int) e.XYZ.z).ToString(), world: e.dimension);
+                var position = (x: ((int)e.XYZ.x).ToString(), y: ((int)e.XYZ.y).ToString(),
+                    z: ((int)e.XYZ.z).ToString(), world: e.dimension);
 
                 if (msg.StartsWith(prefix))
                 {
@@ -397,7 +405,7 @@ namespace MCPromoter
                         case "=":
                             string expression = msg.Replace($"{prefix}= ", "");
                             string result = new DataTable().Compute(expression, "").ToString();
-                            StandardizedFeedback(name, result);
+                            StandardizedFeedback("@a",$"{expression} = {result}");
                             break;
                         case "here":
                             api.runcmd("playsound random.levelup @a");
@@ -458,15 +466,15 @@ namespace MCPromoter
                                 {
                                     await Task.Delay(1000);
                                     string gameDay = GameDatas.GameDay;
-                                    StandardizedFeedback(name, $"现在是游戏内的第{gameDay}天.");
+                                    StandardizedFeedback("@a", $"现在是游戏内的第{gameDay}天.");
                                 });
                             }
                             else if (argsList[1] == "server")
                             {
                                 DateTime nowDate = DateTime.Now;
                                 string serverDay =
-                                    ((int) nowDate.Subtract(GameDatas.OpeningDate).TotalDays).ToString();
-                                StandardizedFeedback(name, $"今天是开服的第{serverDay}天.");
+                                    ((int)nowDate.Subtract(GameDatas.OpeningDate).TotalDays).ToString();
+                                StandardizedFeedback("@a", $"今天是开服的第{serverDay}天.");
                             }
 
                             break;
@@ -474,12 +482,12 @@ namespace MCPromoter
                             if (argsList[1] == "pick")
                             {
                                 api.runcmd($"tp @e[type=item] {name}");
-                                StandardizedFeedback(name, "您已拾取所有掉落物");
+                                StandardizedFeedback("@a", $"{name}已拾取所有掉落物");
                             }
                             else if (argsList[1] == "clear")
                             {
                                 api.runcmd("kill @e[type=item]");
-                                StandardizedFeedback(name, "您已清除所有掉落物");
+                                StandardizedFeedback("@a", $"{name}已清除所有掉落物");
                             }
                             else if (argsList[1] == "count")
                             {
@@ -491,7 +499,7 @@ namespace MCPromoter
                                 {
                                     await Task.Delay(1000);
                                     string itemCount = GameDatas.ItemCounter;
-                                    StandardizedFeedback(name, $"当前的掉落物数为{itemCount}");
+                                    StandardizedFeedback("@a", $"当前的掉落物数为{itemCount}");
                                 });
                             }
 
@@ -506,7 +514,7 @@ namespace MCPromoter
                                 {
                                     await Task.Delay(1000);
                                     string entityCount = GameDatas.EntityCounter;
-                                    StandardizedFeedback(name, $"当前的实体数为{entityCount}");
+                                    StandardizedFeedback("@a", $"当前的实体数为{entityCount}");
                                 });
                             }
                             else if (argsList[1] == "list")
@@ -523,18 +531,18 @@ namespace MCPromoter
                                 Task.Run(async delegate
                                 {
                                     await Task.Delay(1000);
-                                    StandardizedFeedback(name, $"当前死亡不掉落{GameDatas.KiStatus}");
+                                    StandardizedFeedback("@a", $"当前死亡不掉落{GameDatas.KiStatus}");
                                 });
                             }
                             else if (argsList[1] == "true")
                             {
                                 api.runcmd("gamerule keepInventory true");
-                                StandardizedFeedback(name, "死亡不掉落已开启");
+                                StandardizedFeedback("@a", "死亡不掉落已开启");
                             }
                             else if (argsList[1] == "false")
                             {
                                 api.runcmd("gamerule keepInventory false");
-                                StandardizedFeedback(name, "死亡不掉落已关闭");
+                                StandardizedFeedback("@a", "死亡不掉落已关闭");
                             }
 
                             break;
@@ -557,31 +565,31 @@ namespace MCPromoter
                                 Task.Run(async delegate
                                 {
                                     await Task.Delay(1000);
-                                    StandardizedFeedback(name, $"当前生物破坏{GameDatas.MgStatus}");
+                                    StandardizedFeedback("@a", $"当前生物破坏{GameDatas.MgStatus}");
                                 });
                             }
                             else if (argsList[1] == "true")
                             {
                                 api.runcmd("gamerule mobGriefing true");
-                                StandardizedFeedback(name, "生物破坏已开启");
+                                StandardizedFeedback("@a", "生物破坏已开启");
                             }
                             else if (argsList[1] == "false")
                             {
                                 api.runcmd("gamerule mobGriefing false");
-                                StandardizedFeedback(name, "生物破坏已关闭");
+                                StandardizedFeedback("@a", "生物破坏已关闭");
                             }
 
                             break;
                         case "rc":
                             string command = msg.Replace($"{prefix}rc ", "");
                             bool cmdResult = api.runcmd(command);
-                            StandardizedFeedback(name, cmdResult ? $"已成功向控制台注入了{command}" : $"{command}运行失败");
+                            StandardizedFeedback("@a", cmdResult ? $"已成功向控制台注入了{command}" : $"{command}运行失败");
 
                             break;
                         case "size":
                             //string worldSize = ((int) (GetWorldSize($@"worlds\{worldName}") / 1024 / 1024)).ToString();
                             string worldSize = FormatSize(GetWorldSize($@"worlds\{worldName}"));
-                            StandardizedFeedback(name, $"当前服务器的存档大小是§l§6{worldSize}");
+                            StandardizedFeedback("@a", $"当前服务器的存档大小是§l§6{worldSize}");
                             break;
                         case "sta":
                             string statisName = argsList[1];
@@ -597,7 +605,7 @@ namespace MCPromoter
                             if (statisName != "null")
                             {
                                 api.runcmd($"scoreboard objectives setdisplay sidebar {statisName}");
-                                StandardizedFeedback(name,
+                                StandardizedFeedback("@a",
                                     cnStatisName.ContainsKey(statisName)
                                         ? $"已将侧边栏显示修改为{cnStatisName[statisName]}"
                                         : $"已将侧边栏显示修改为{statisName}");
@@ -605,7 +613,7 @@ namespace MCPromoter
                             else
                             {
                                 api.runcmd("scoreboard objectives setdisplay sidebar");
-                                StandardizedFeedback(name, "已关闭侧边栏显示");
+                                StandardizedFeedback("@a", "已关闭侧边栏显示");
                             }
 
                             break;
@@ -614,12 +622,12 @@ namespace MCPromoter
                             if (argsList[1] == "cpu")
                             {
                                 string cpuUsage = systemInfo.GetCpuUsage();
-                                StandardizedFeedback(name, $"当前服务器CPU占用率为§l§6{cpuUsage}");
+                                StandardizedFeedback("@a", $"当前服务器CPU占用率为§l§6{cpuUsage}");
                             }
                             else if (argsList[1] == "memory")
                             {
                                 string memoryUsage = systemInfo.GetMemoryUsage();
-                                StandardizedFeedback(name, $"当前服务器物理内存占用率为§l§6{memoryUsage}");
+                                StandardizedFeedback("@a", $"当前服务器物理内存占用率为§l§6{memoryUsage}");
                             }
                             break;
                         case "task":
@@ -627,12 +635,12 @@ namespace MCPromoter
                             if (argsList[1] == "add")
                             {
                                 api.runcmd($"scoreboard players set {taskName} Tasks 1");
-                                StandardizedFeedback(name, $"已向待办事项板添加§l{taskName}");
+                                StandardizedFeedback("@a", $"已向待办事项板添加§l{taskName}");
                             }
                             else if (argsList[1] == "remove")
                             {
                                 api.runcmd($"scoreboard players reset {taskName} Tasks");
-                                StandardizedFeedback(name, $"已将§l{taskName}§r从待办事项板上移除");
+                                StandardizedFeedback("@a", $"已将§l{taskName}§r从待办事项板上移除");
                             }
 
                             break;
@@ -643,13 +651,13 @@ namespace MCPromoter
                                 Task.Run(async delegate
                                 {
                                     await Task.Delay(1000);
-                                    StandardizedFeedback(name, $"现在的游戏随机刻为{GameDatas.TickStatus}");
+                                    StandardizedFeedback("@a", $"现在的游戏随机刻为{GameDatas.TickStatus}");
                                 });
                             }
                             else if (int.TryParse(argsList[1], out int tickSpeed))
                             {
                                 api.runcmd($"gamerule randomtickspeed {tickSpeed}");
-                                StandardizedFeedback(name, $"已将游戏内随机刻修改为{tickSpeed}。");
+                                StandardizedFeedback("@a", $"已将游戏内随机刻修改为{tickSpeed}。");
                             }
 
                             break;
@@ -711,8 +719,108 @@ namespace MCPromoter
                             }
 
                             break;
-                        case "quicksleep":
-
+                        case "qs":
+                            if (argsList.Length == 1)
+                            {
+                                if (IsQuickSleep == true)
+                                {
+                                    StandardizedFeedback("@a", $"现在游戏内已存在一个由{QuickSleepName}发起的快速跳过夜晚投票");
+                                    StandardizedFeedback("@a", $"请使用{prefix}qs accept投出支持票，使用{prefix}qs refuse投出反对票");
+                                    return true;
+                                }
+                                onlinePlayer.Clear();
+                                foreach (var playerData in playerDatas)
+                                {
+                                    if (playerData.Value.IsOnline == true)
+                                    {
+                                        onlinePlayer.Add(playerData.Key);
+                                    }
+                                }
+                                if (onlinePlayer.Count <= 1)
+                                {
+                                    StandardizedFeedback(name, "孤单的你，害怕一人在野外入睡，你更渴望温暖的被窝。");
+                                    return true;
+                                }
+                                api.runcmd("time query daytime");
+                                Task.Run(async delegate
+                                {
+                                    await Task.Delay(1000);
+                                    int gameTime = int.Parse(GameDatas.GameTime);
+                                    if (gameTime >= 12544 && gameTime <= 23460)
+                                    {
+                                        IsQuickSleep = true;
+                                        QuickSleepName = name;
+                                        acceptPlayer.Clear();
+                                        acceptPlayer.Add(QuickSleepName);
+                                        StandardizedFeedback("@a", $"§6§l{QuickSleepName}发起快速跳过夜晚投票，请使用{prefix}qs accept投出支持票，使用{prefix}qs refuse投出反对票。");
+                                        StandardizedFeedback("@a", $"§6§l当前已有{acceptPlayer.Count}人投出支持票，至少需要{onlinePlayer.Count}人");
+                                        StandardizedFeedback("@a", "§6§l投票将在18秒后结束。");
+                                        _ = Task.Run(async delegate
+                                            {
+                                                await Task.Delay(18000);
+                                                if (acceptPlayer.Count >= onlinePlayer.Count)
+                                                {
+                                                    StandardizedFeedback("@a", "§5§l深夜，一阵突如其来的反常疲惫侵袭了你的大脑，你失去意识倒在地上。当你醒来时，太阳正从东方冉冉升起。");
+                                                    api.runcmd("time set sunrise");
+                                                    api.runcmd("effect @a instant_damage 1 1 true");
+                                                    api.runcmd("effect @a blindness 8 1 true");
+                                                    api.runcmd("effect @a nausea 8 1 true");
+                                                    api.runcmd("effect @a hunger 8 5 true");
+                                                    api.runcmd("effect @a slowness 8 5 true");
+                                                }
+                                                else
+                                                {
+                                                    StandardizedFeedback("@a", $"§4§l{QuickSleepName}忽然之间厌倦了夜晚。");
+                                                    api.runcmd($"effect {QuickSleepName} instant_damage 1 1 true");
+                                                    api.runcmd($"effect {QuickSleepName} blindness 8 1 true");
+                                                    api.runcmd($"effect {QuickSleepName} nausea 8 1 true");
+                                                    api.runcmd($"effect {QuickSleepName} hunger 8 5 true");
+                                                    api.runcmd($"effect {QuickSleepName} slowness 8 5 true");
+                                                }
+                                                IsQuickSleep = false;
+                                                QuickSleepName = "";
+                                            });
+                                    }
+                                    else
+                                    {
+                                        StandardizedFeedback("@a", "光线突然变得不可抗拒地明亮了起来，刺眼的阳光令你久久无法入睡。");
+                                    }
+                                });
+                            }
+                            else if (argsList[1] == "accept")
+                            {
+                                if (IsQuickSleep == true)
+                                {
+                                    if (!acceptPlayer.Contains(name))
+                                    {
+                                        acceptPlayer.Add(name);
+                                        StandardizedFeedback("@a", $"§a{name}向{QuickSleepName}发起的快速跳过夜晚投票投出支持票.已有{acceptPlayer.Count}人投出支持票，至少需要{onlinePlayer.Count}人。");
+                                    }
+                                    else
+                                    {
+                                        StandardizedFeedback(name, "请勿重复投票");
+                                    }
+                                }
+                                else
+                                {
+                                    StandardizedFeedback(name, $"当前暂无快速跳过夜晚的投票，你可通过{prefix}qs进行发起");
+                                }
+                            }
+                            else if (argsList[1] == "refuse")
+                            {
+                                if (IsQuickSleep == true)
+                                {
+                                    if (acceptPlayer.Contains(name))
+                                    {
+                                        acceptPlayer.Remove(name);
+                                    }
+                                    StandardizedFeedback("@a", $"§c{name}向{QuickSleepName}发起的快速跳过夜晚投票投出拒绝票.");
+                                }
+                                else
+                                {
+                                    StandardizedFeedback(name, $"当前暂无快速跳过夜晚的投票，你可通过{prefix}qs进行发起");
+                                }
+                            }
                             break;
                         default:
                             StandardizedFeedback(name, $"无效的MCP指令，请输入{prefix}mcp help获取帮助");
@@ -739,8 +847,8 @@ namespace MCPromoter
 
                 if (deadType == "entity.player.name")
                 {
-                    var deadPosition = (x: ((int) e.XYZ.x).ToString(), y: ((int) e.XYZ.y).ToString(),
-                        z: ((int) e.XYZ.z).ToString(), world: e.dimension);
+                    var deadPosition = (x: ((int)e.XYZ.x).ToString(), y: ((int)e.XYZ.y).ToString(),
+                        z: ((int)e.XYZ.z).ToString(), world: e.dimension);
                     StandardizedFeedback("@a",
                         $"§r§l§f{deadName}§r§o§4 死于 §r§l§f{deadPosition.world}[{deadPosition.x},{deadPosition.y},{deadPosition.z}]");
                     playerDatas[deadName].DeadX = deadPosition.x;
@@ -855,7 +963,7 @@ namespace MCPromoter
                     GameDatas.ItemCounter = Regex.Replace(output, @"[^0-9]+", "");
                 }
 
-                string[] blockWords = {"Killed", "Dead", "Dig", "Placed", "Used", "Health", "_CounterCache"};
+                string[] blockWords = { "Killed", "Dead", "Dig", "Placed", "Used", "Health", "_CounterCache" };
                 foreach (var blockWord in blockWords)
                 {
                     if (output.Contains(blockWord)) return false;
@@ -901,7 +1009,7 @@ namespace MCPromoter
                 }
                 else
                 {
-                    playerDatas.Add(name, new PlayerDatas {Name = name, Uuid = uuid, Xuid = xuid});
+                    playerDatas.Add(name, new PlayerDatas { Name = name, Uuid = uuid, Xuid = xuid });
                     api.logout($"[MCP]新实例化用于存储{name}信息的PlayerDatas类");
                 }
 
