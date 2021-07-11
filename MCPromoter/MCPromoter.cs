@@ -17,7 +17,7 @@ namespace MCPromoter
     public static class PluginInfo
     {
         public static string Name => "MinecraftPromoter";
-        public static string Version => "V1.7.3";
+        public static string Version => "V1.8.0";
         public static string Author => "XianYu_Hil";
     }
 
@@ -150,6 +150,7 @@ namespace MCPromoter
         private static bool antiCheat;
         private static string worldName;
         private static string prefix;
+        private static bool isQBEnable = true;
 
         private static readonly string[] HelpTexts =
         {
@@ -167,8 +168,8 @@ namespace MCPromoter
             "mg [true|false]   开启/关闭生物破坏",
             "qs     发起快速跳过夜晚投票",
             "qs [accept|refuse]     同意/拒绝快速跳过夜晚",
-            //"@qb [make|back|restart]    快速备份/还原/重启服务器",
-            //"@qb time   查询上次备份时间",
+            "@qb [make|back|restart]    快速备份/还原/重启服务器",
+            "@qb time   查询上次备份时间",
             "sh <指令>   向控制台注入指令(需特殊授权)",
             "size      获取存档大小",
             "sta <计分板名>    将侧边栏显示调整为特定计分板",
@@ -228,14 +229,20 @@ namespace MCPromoter
         public static void Initialize()
         {
             IniFile iniFile = new IniFile(@"CSR\MCP\config.ini");
-            if (!Directory.Exists(@"CSR\MCP"))
+            DirectoryInfo iniDirectory = new DirectoryInfo(@"CSR\MCP");
+            if (!iniDirectory.Exists)
             {
-                DirectoryInfo directoryInfo = new DirectoryInfo(@"CSR\MCP");
-                directoryInfo.Create();
+                iniDirectory.Create();
+            }
+            DirectoryInfo QBDirectory = new DirectoryInfo(@"CSR\MCP\QuickBackup");
+            if (!QBDirectory.Exists)
+            {
+                QBDirectory.Create();
+                _mapi.logout(@"[MCP]请将QuickBackup.exe放入CSR\MCP\QuickBackup以启用QuickBackup");
             }
 
-            FileStream fileStream = new FileStream(@"CSR\MCP\config.ini", FileMode.Create);
-            fileStream.Close();
+            FileInfo fileInfo = new FileInfo(@"CSR\MCP\config.ini");
+            fileInfo.Create();
             iniFile.IniWriteValue("Config", "WorldName", "");
             iniFile.IniWriteValue("Config", "AntiCheat", "true");
             iniFile.IniWriteValue("Config", "ServerStartDate", DateTime.Now.ToString());
@@ -253,28 +260,29 @@ namespace MCPromoter
 
         public static void LoadConf()
         {
-            IniFile iniFile = new IniFile(@"CSR\MCP\config.ini");
             if (File.Exists(@"CSR\MCP\config.ini"))
             {
+                IniFile iniFile = new IniFile(@"CSR\MCP\config.ini");
                 worldName = iniFile.IniReadValue("Config", "WorldName");
-                antiCheat = Boolean.Parse(iniFile.IniReadValue("Config", "AntiCheat"));
-
-                string _whitelistNames = iniFile.IniReadValue("WhiteList", "PlayerNames");
-                whitelistNames = _whitelistNames.Split(';');
-                string _whitelistXuids = iniFile.IniReadValue("WhiteList", "PlayerXuids");
-                whitelistXuids = _whitelistXuids.Split(';');
-                string _adminNames = iniFile.IniReadValue("WhiteList", "AdminNames");
-                adminNames = _adminNames.Split(';');
-                string _adminCmds = iniFile.IniReadValue("WhiteList", "AdminCmds");
-                adminCmds = _adminCmds.Split(';');
-                string _allowedCmds = iniFile.IniReadValue("WhiteList", "AllowedCmds");
-                allowedCmds = _allowedCmds.Split(';');
-
-                string _suicideMsgs = iniFile.IniReadValue("Customization", "SuicideMsgs");
-                suicideMsgs = _suicideMsgs.Split(';');
-
-                prefix = iniFile.IniReadValue("Customization", "Prefix");
+                antiCheat = bool.Parse(iniFile.IniReadValue("Config", "AntiCheat"));
                 GameDatas.OpeningDate = DateTime.Parse(iniFile.IniReadValue("Config", "ServerStartDate"));
+
+                whitelistNames = iniFile.IniReadValue("WhiteList", "PlayerNames").Split(';');
+                whitelistXuids = iniFile.IniReadValue("WhiteList", "PlayerXuids").Split(';');
+                adminNames = iniFile.IniReadValue("WhiteList", "AdminNames").Split(';');
+                adminCmds = iniFile.IniReadValue("WhiteList", "AdminCmds").Split(';');
+                allowedCmds = iniFile.IniReadValue("WhiteList", "AllowedCmds").Split(';');
+
+                suicideMsgs = iniFile.IniReadValue("Customization", "SuicideMsgs").Split(';');
+                prefix = iniFile.IniReadValue("Customization", "Prefix");
+
+                if(!Directory.Exists(@"CSR\MCP\QuickBackup") || !File.Exists(@"CSR\MCP\QuickBackup\QuickBackup.exe"))
+                {
+                    _mapi.logout("[MCP]快速备份QuickBackup核心组件丢失，@qb无法使用");
+                    _mapi.logout(@"[MCP]请将QuickBackup.exe放入CSR\MCP\QuickBackup以启用QuickBackup");
+                    isQBEnable = false;
+                }
+
                 _mapi.logout("[MCP]已载入配置文件。");
             }
             else
@@ -820,6 +828,49 @@ namespace MCPromoter
                                 {
                                     StandardizedFeedback(name, $"当前暂无快速跳过夜晚的投票，你可通过{prefix}qs进行发起");
                                 }
+                            }
+                            break;
+                        case "qb":
+                            if (isQBEnable == false)
+                            {
+                                StandardizedFeedback("@a","快速备份QuickBackup核心组件丢失，@qb无法使用");
+                                return true;
+                            }
+                            if (argsList[1] == "make")
+                            {
+                                StandardizedFeedback("@a", "服务器将在§l5秒§r后重启进行备份，预计需要一分钟");
+                                Task.Run(async delegate
+                                {
+                                    await Task.Delay(5000);
+                                    Process.Start(@"CSR\MCP\QuickBackup\QuickBackup.exe", $"MAKE {worldName}");
+                                    api.runcmd("stop");
+                                });
+                            }
+                            else if (argsList[1] == "back")
+                            {
+                                StandardizedFeedback("@a", "服务器将在§l5秒§r后重启进行回档，预计需要一分钟");
+                                Task.Run(async delegate
+                                {
+                                    await Task.Delay(5000);
+                                    Process.Start(@"CSR\MCP\QuickBackup\QuickBackup.exe", $"BACK {worldName}");
+                                    api.runcmd("stop");
+                                });
+                            }
+                            else if (argsList[1] == "restart")
+                            {
+                                StandardizedFeedback("@a", "服务器将在§l5秒§r后进行重启，预计需要一分钟");
+                                Task.Run(async delegate
+                                {
+                                    await Task.Delay(5000);
+                                    Process.Start(@"CSR\MCP\QuickBackup\QuickBackup.exe", $"RESTART {worldName}");
+                                    api.runcmd("stop");
+                                });
+                            }
+                            else if (argsList[1] == "time")
+                            {
+                                StreamReader QBTimeReader = new StreamReader(@"CSR\MCP\QuickBackup\qbTime.txt");
+                                string qbTime = QBTimeReader.ReadLine();
+                                StandardizedFeedback("@a", $"上一个qb备份时间：§l{qbTime}");
                             }
                             break;
                         default:
