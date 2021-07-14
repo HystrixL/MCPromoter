@@ -17,7 +17,16 @@ namespace MCPromoter
     public static class PluginInfo
     {
         public static string Name => "MinecraftPromoter";
-        public static string Version => "V1.9.1";
+        public static string Version => "V1.10.0";//10901
+        public static int VersioID
+        {
+            get
+            {
+                string[] version = Version.Replace("V", "").Split('.');
+                int versionID = int.Parse(version[0]) * 10000 + int.Parse(version[1]) * 100 + int.Parse(version[2]);
+                return versionID;
+            }
+        }
         public static string Author => "XianYu_Hil";
     }
 
@@ -176,6 +185,7 @@ namespace MCPromoter
             "size      获取存档大小",
             "sta <计分板名>    将侧边栏显示调整为特定计分板",
             "sta null      关闭侧边栏显示",
+            "sta auto [true|false]      开启/关闭计分板自动切换",
             "system [cpu|memory]    查询服务器CPU/内存占用率",
             "task [add|remove] <任务名>   添加/移除指定任务",
             "tick [倍数|status]      设置/查询随机刻倍数",
@@ -304,6 +314,7 @@ namespace MCPromoter
             ArrayList acceptPlayer = new ArrayList();
             bool IsQuickSleep = false;
             string QuickSleepName = "";
+            bool isAutoChange=false;
 
             _mapi = api;
 
@@ -466,7 +477,7 @@ namespace MCPromoter
                                 }
                                 else if (argsList[1] == "tp")
                                 {
-                                    api.runcmd($"tp {name} @e[name=bot_{botName}");
+                                    api.runcmd($"tp {name} @e[name=bot_{botName}]");
                                 }
                             }
 
@@ -562,13 +573,14 @@ namespace MCPromoter
                         case "kill":
                             playerDatas[name].IsSuicide = true;
                             api.runcmd($"kill {name}");
-                            for (int i = 0; i < suicideMsgs.Length; i++)
+                            string[] _suicideMsgs = suicideMsgs;
+                            for (int i = 0; i < _suicideMsgs.Length; i++)
                             {
-                                suicideMsgs[i] = suicideMsgs[i].Replace("{}", $"§l{name}§r");
+                                _suicideMsgs[i] = _suicideMsgs[i].Replace("{}", $"§l{name}§r");
                             }
 
-                            int suicideMsgNum = new Random().Next(0, suicideMsgs.Length);
-                            StandardizedFeedback("@a", suicideMsgs[suicideMsgNum]);
+                            int suicideMsgNum = new Random().Next(0, _suicideMsgs.Length);
+                            StandardizedFeedback("@a", _suicideMsgs[suicideMsgNum]);
                             break;
                         case "mg":
                             if (argsList[1] == "status")
@@ -605,8 +617,48 @@ namespace MCPromoter
                             StandardizedFeedback("@a", $"当前服务器的存档大小是§l§6{worldSize}");
                             break;
                         case "sta":
-                            string statisName = argsList[1];
-                            Dictionary<string, string> cnStatisName = new Dictionary<string, string>
+                            if (argsList[1] == "auto")
+                            {
+                                if(isAutoChange==true && bool.Parse(argsList[2]) == true)
+                                {
+                                    StandardizedFeedback("@a","计分板自动切换正在运行中，请勿重复开启.");
+                                    return true;
+                                }
+                                isAutoChange = bool.Parse(argsList[2]);
+                                if (isAutoChange == true)
+                                {
+                                    Task.Run(async delegate
+                                    {
+                                        string[] statisName =
+                                        {
+                                            "Dig","Placed","Killed","Tasks","Dead","Used"
+                                        };
+                                        int timer = 0;
+                                        while (isAutoChange)
+                                        {
+                                            api.runcmd($"scoreboard objectives setdisplay sidebar {statisName[timer]}");
+                                            if (timer >= statisName.Length-1)
+                                            {
+                                                timer = 0;
+                                            }
+                                            else
+                                            {
+                                                timer++;
+                                            }
+                                            await Task.Delay(60000);
+                                        }
+                                    });
+                                    StandardizedFeedback("@a","已开启计分板自动切换.切换周期:60秒");
+                                }
+                                else
+                                {
+                                    StandardizedFeedback("@a", "已关闭计分板自动切换.");
+                                }
+                            }
+                            else
+                            {
+                                string statisName = argsList[1];
+                                Dictionary<string, string> cnStatisName = new Dictionary<string, string>
                             {
                                 {"Dig", "挖掘榜"},
                                 {"Placed", "放置榜"},
@@ -615,19 +667,21 @@ namespace MCPromoter
                                 {"Dead", "死亡榜"},
                                 {"Used", "使用榜"}
                             };
-                            if (statisName != "null")
-                            {
-                                api.runcmd($"scoreboard objectives setdisplay sidebar {statisName}");
-                                StandardizedFeedback("@a",
-                                    cnStatisName.ContainsKey(statisName)
-                                        ? $"已将侧边栏显示修改为{cnStatisName[statisName]}"
-                                        : $"已将侧边栏显示修改为{statisName}");
+                                if (statisName != "null")
+                                {
+                                    api.runcmd($"scoreboard objectives setdisplay sidebar {statisName}");
+                                    StandardizedFeedback("@a",
+                                        cnStatisName.ContainsKey(statisName)
+                                            ? $"已将侧边栏显示修改为{cnStatisName[statisName]}"
+                                            : $"已将侧边栏显示修改为{statisName}");
+                                }
+                                else
+                                {
+                                    api.runcmd("scoreboard objectives setdisplay sidebar");
+                                    StandardizedFeedback("@a", "已关闭侧边栏显示");
+                                }
                             }
-                            else
-                            {
-                                api.runcmd("scoreboard objectives setdisplay sidebar");
-                                StandardizedFeedback("@a", "已关闭侧边栏显示");
-                            }
+
 
                             break;
                         case "system":
@@ -845,7 +899,7 @@ namespace MCPromoter
                             {
                                 string slot = argsList[2];
                                 string comment = argsList[3];
-                                if(int.Parse(slot)<1 || int.Parse(slot) > 5)
+                                if (int.Parse(slot) < 1 || int.Parse(slot) > 5)
                                 {
                                     StandardizedFeedback("@a", $"[槽位{slot}]无效。槽位必须是1~5的整数，请重新指定槽位。");
                                     return true;
@@ -1082,6 +1136,7 @@ namespace MCPromoter
                 if (playerDatas.ContainsKey(name))
                 {
                     playerDatas[name].IsOnline = true;
+                    playerDatas[name].Uuid = uuid;
                 }
                 else
                 {
