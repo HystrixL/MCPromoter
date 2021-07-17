@@ -9,143 +9,12 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using YamlDotNet.Serialization;
 using CSR;
 using MCPromoter;
 
 namespace MCPromoter
 {
-    public static class PluginInfo
-    {
-        public static string Name => "MinecraftPromoter";
-        public static string Version => "V1.10.0";//10901
-        public static int VersioID
-        {
-            get
-            {
-                string[] version = Version.Replace("V", "").Split('.');
-                int versionID = int.Parse(version[0]) * 10000 + int.Parse(version[1]) * 100 + int.Parse(version[2]);
-                return versionID;
-            }
-        }
-        public static string Author => "XianYu_Hil";
-    }
-
-    public static class GameDatas
-    {
-        public static string GameDay { get; set; }
-        public static string GameTime { get; set; }
-        public static DateTime OpeningDate { get; set; }
-        public static string TickStatus { get; set; }
-        public static string MgStatus { get; set; }
-        public static string KiStatus { get; set; }
-        public static string EntityCounter { get; set; }
-        public static string ItemCounter { get; set; }
-
-    }
-
-    class SystemInfo
-    {
-        [DllImport("kernel32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool GlobalMemoryStatusEx(ref MEMORY_INFO mi);
-        PerformanceCounter cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-
-        [StructLayout(LayoutKind.Sequential)]
-        struct MEMORY_INFO
-        {
-            public uint dwLength;
-            public uint dwMemoryLoad;
-            public ulong ullTotalPhys;
-            public ulong ullAvailPhys;
-            public ulong ullTotalPageFile;
-            public ulong ullAvailPageFile;
-            public ulong ullTotalVirtual;
-            public ulong ullAvailVirtual;
-            public ulong ullAvailExtendedVirtual;
-        }
-
-        MEMORY_INFO GetMemoryStatus()
-        {
-            MEMORY_INFO mi = new MEMORY_INFO();
-            mi.dwLength = (uint)Marshal.SizeOf(mi);
-            GlobalMemoryStatusEx(ref mi);
-            return mi;
-        }
-
-        ulong GetAvailPhys()
-        {
-            MEMORY_INFO mi = GetMemoryStatus();
-            return mi.ullAvailPhys;
-        }
-
-        ulong GetUsedPhys()
-        {
-            MEMORY_INFO mi = GetMemoryStatus();
-            return (mi.ullTotalPhys - mi.ullAvailPhys);
-        }
-
-        ulong GetTotalPhys()
-        {
-            MEMORY_INFO mi = GetMemoryStatus();
-            return mi.ullTotalPhys;
-        }
-
-        public string GetMemoryUsage()
-        {
-            return ((float)GetUsedPhys() / GetTotalPhys()).ToString("P2");
-        }
-
-        public string GetCpuUsage()
-        {
-            return cpuCounter.NextValue().ToString("f2") + "%";
-        }
-    }
-
-
-    class PlayerDatas
-    {
-        public string Name { get; set; }
-        public string Uuid { get; set; }
-        public string Xuid { get; set; }
-        public bool IsSuicide { get; set; }
-        public bool DeadEnable { get; set; }
-        public string DeadX { get; set; }
-        public string DeadY { get; set; }
-        public string DeadZ { get; set; }
-        public string DeadWorld { get; set; }
-
-        public bool IsOnline { get; set; } = true;
-    }
-
-    class IniFile
-    {
-        private readonly string _path;
-
-        public IniFile(string iniPath)
-        {
-            _path = iniPath;
-        }
-
-        [DllImport("kernel32")]
-        private static extern long WritePrivateProfileString(string section, string key, string val, string filePath);
-
-        [DllImport("kernel32")]
-        private static extern int GetPrivateProfileString(string section, string key, string def, StringBuilder retVal,
-            int size, string filePath);
-
-        public void IniWriteValue(string section, string key, string value)
-        {
-            WritePrivateProfileString(section, key, value, _path);
-        }
-
-        public string IniReadValue(string section, string key)
-        {
-            StringBuilder temp = new StringBuilder(32767);
-            GetPrivateProfileString(section, key, "", temp, 32767, _path);
-            return temp.ToString();
-        }
-    }
-
     public class MCPromoter
     {
         private static MCCSAPI _mapi;
@@ -321,6 +190,17 @@ namespace MCPromoter
             IniFile iniFile = new IniFile(@"CSR\MCP\config.ini");
             LoadConf();
 
+            Task.Run(async delegate {
+                api.logout("[MCP]开始玩家在线时间累加...");
+                while (true)
+                {
+                    await Task.Delay(60000);
+                    api.runcmd($"scoreboard players add @a OnlineMinutes 1");
+                }
+            
+            });
+
+
             api.addAfterActListener(EventKey.onInputText, x =>
             {
                 var e = BaseEvent.getFrom(x) as InputTextEvent;
@@ -377,8 +257,9 @@ namespace MCPromoter
                                         api.runcmd("scoreboard objectives add Placed dummy §l§7放置榜");
                                         // api.runcmd("scoreboard objectives add Attack dummy §l§7伤害榜");
                                         // api.runcmd("scoreboard objectives add Hurt dummy §l§7承伤榜");
-                                        api.runcmd("scoreboard objectives add Used dummy §l§7使用榜");
+                                        // api.runcmd("scoreboard objectives add Used dummy §l§7使用榜");
                                         api.runcmd("scoreboard objectives add Tasks dummy §l§e服务器摸鱼指南");
+                                        api.runcmd("scoreboard objectives add OnlineMinutes dummy §l§7在线时长榜(分钟)");
                                         api.runcmd("scoreboard objectives add _CounterCache dummy");
                                         api.runcmd("scoreboard objectives add Counter dummy");
                                         break;
@@ -631,7 +512,7 @@ namespace MCPromoter
                                     {
                                         string[] statisName =
                                         {
-                                            "Dig","Placed","Killed","Tasks","Dead","Used"
+                                            "Dig","Placed","Killed","Tasks","Dead","OnlineMinutes"
                                         };
                                         int timer = 0;
                                         while (isAutoChange)
@@ -665,7 +546,7 @@ namespace MCPromoter
                                 {"Killed", "击杀榜"},
                                 {"Tasks", "待办事项榜"},
                                 {"Dead", "死亡榜"},
-                                {"Used", "使用榜"}
+                                {"OnlineMinutes","在线时长榜(分钟)"}
                             };
                                 if (statisName != "null")
                                 {
@@ -764,9 +645,11 @@ namespace MCPromoter
                                     {
                                         string _whitelistName = string.Join(";", whitelistNames);
                                         _whitelistName = _whitelistName.Replace(";" + newName, "");
+                                        _whitelistName = _whitelistName.Replace(newName + ";", "");
                                         string _whitelistXuid = string.Join(";", whitelistXuids);
                                         _whitelistXuid =
                                             _whitelistXuid.Replace(";" + playerDatas[newName].Xuid, "");
+                                        _whitelistXuid = _whitelistXuid.Replace(playerDatas[newName] + ";", "");
                                         iniFile.IniWriteValue("WhiteList", "PlayerNames", _whitelistName);
                                         iniFile.IniWriteValue("WhiteList", "PlayerXuids", _whitelistXuid);
                                         api.runcmd($"kick {newName} 您已被{name}永久封禁。");
@@ -1028,6 +911,7 @@ namespace MCPromoter
                 return true;
             });
 
+            /*
             api.addAfterActListener(EventKey.onUseItem, x =>
             {
                 var e = BaseEvent.getFrom(x) as UseItemEvent;
@@ -1041,6 +925,7 @@ namespace MCPromoter
 
                 return true;
             });
+            */
 
             api.addBeforeActListener(EventKey.onServerCmdOutput, x =>
             {
@@ -1093,7 +978,7 @@ namespace MCPromoter
                     GameDatas.ItemCounter = Regex.Replace(output, @"[^0-9]+", "");
                 }
 
-                string[] blockWords = { "Killed", "Dead", "Dig", "Placed", "Used", "Health", "_CounterCache" };
+                string[] blockWords = { "Killed", "Dead", "Dig", "Placed", "Health", "_CounterCache", "Tasks", "OnlineMinutes" };
                 foreach (var blockWord in blockWords)
                 {
                     if (output.Contains(blockWord)) return false;
