@@ -9,7 +9,7 @@ namespace MCPromoter
     public static class PluginInfo
     {
         public static string Name => "MinecraftPromoter";
-        public static string Version => "V1.11.0";
+        public static string Version => "V2.0.0";
         public static int VersioID
         {
             get
@@ -21,12 +21,23 @@ namespace MCPromoter
         }
         public static string Author => "XianYu_Hil";
     }
+    
+    public static class PluginPath
+    {
+        public static string RootPath = @"plugins\MCPromoter";
+        public static string ConfigPath = $@"{RootPath}\config.yml";
+        public static string LogsRootPath = $@"{RootPath}\Logs";
+        public static string LogsPath = $@"{LogsRootPath}\{DateTime.Now:yyMMddHHmmss}.log";
+        public static string QbRootPath = $@"{RootPath}\QuickBackup";
+        public static string QbHelperPath = $@"{QbRootPath}\QuickBackup.exe";
+        public static string QbLogPath = $@"{QbRootPath}\qbLog.txt";
+        public static string QbInfoPath = $@"{QbRootPath}\qbInfo.ini";
+    } 
 
     public static class GameDatas
     {
         public static string GameDay { get; set; }
         public static string GameTime { get; set; }
-        public static DateTime OpeningDate { get; set; }
         public static string TickStatus { get; set; }
         public static string MgStatus { get; set; }
         public static string KiStatus { get; set; }

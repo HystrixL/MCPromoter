@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace MCPromoter
 {
+
     class SystemInfo
     {
         [DllImport("kernel32.dll")]

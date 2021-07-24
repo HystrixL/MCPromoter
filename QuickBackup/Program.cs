@@ -99,7 +99,7 @@ namespace QuickBackup
             }
             Console.WriteLine("即将重启服务器.");
             Thread.Sleep(5000);
-            Process.Start("bedrock_server.exe");
+            Process.Start(@"..\MCModDllExe\debug.bat");
 
             logWriter.WriteLine($"[{DateTime.Now}]Finish {mod} {slot} {worldName} {comment}");
             logWriter.Close();
