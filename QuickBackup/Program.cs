@@ -8,6 +8,7 @@ using System.Threading;
 using System.Runtime.InteropServices;
 using System.IO;
 using System.Diagnostics;
+using MCPromoter;
 
 namespace QuickBackup
 {
@@ -46,31 +47,45 @@ namespace QuickBackup
     {
         static void Main(string[] args)
         {
-            string mod = args[0];
+            string mode = args[0];
             string worldName = args[1];
             string slot = args[2];
             string comment = args[3];
-            StreamWriter logWriter = File.AppendText(@"CSR\MCP\QuickBackup\qbLog.txt");
-            logWriter.WriteLine($"[{DateTime.Now}]Start {mod} {slot} {worldName} {comment}");
-            Console.WriteLine("Wait for 20s");
+            string loaderPath = args[4];
+            bool isServerStop = false;
+            while (!isServerStop)
+            {
+                Console.WriteLine("Server is still running...");
+                Thread.Sleep(5000);
+                if (Process.GetProcessesByName("bedrock_server").ToList().Count <= 0)
+                {
+                    isServerStop = true;
+                }
+            }
+            
+            Console.WriteLine("即将开始......");
             Thread.Sleep(20000);
-            switch (mod)
+            StreamWriter logWriter = File.AppendText(QuickBackupPath.QbLogPath);
+            logWriter.WriteLine($"[{DateTime.Now}]Start {mode} {slot} {worldName} {comment}");
+
+            switch (mode)
             {
                 case "MAKE":
                     if (Directory.Exists($@"worlds\{worldName}"))
                     {
-                        FileInfo backupArchive = new FileInfo($@"CSR\MCP\QuickBackup\{slot}.zip");
+                        FileInfo backupArchive = new FileInfo($@"{QuickBackupPath.QbRootPath}\{slot}.zip");
                         if (backupArchive.Exists)
                         {
                             Console.WriteLine("已移除旧备份.");
                             backupArchive.Delete();
                         }
-                        ZipFile.CreateFromDirectory($@"worlds\{worldName}", $@"CSR\MCP\QuickBackup\{slot}.zip", CompressionLevel.Optimal, true);
+                        ZipFile.CreateFromDirectory($@"worlds\{worldName}", $@"{QuickBackupPath.QbRootPath}\{slot}.zip", CompressionLevel.Optimal, true);
                         Console.WriteLine("备份已完成.");
-                        IniFile iniFile = new IniFile(@"CSR\MCP\QuickBackup\qbInfo.ini");
+                        IniFile iniFile = new IniFile(QuickBackupPath.QbInfoPath);
                         iniFile.IniWriteValue(slot, "WorldName",worldName);
                         iniFile.IniWriteValue(slot, "BackupTime", DateTime.Now.ToString());
                         iniFile.IniWriteValue(slot, "Comment", comment);
+                        iniFile.IniWriteValue(slot,"Size",new FileInfo($@"{QuickBackupPath.QbRootPath}\{slot}.zip").Length.ToString());
                     }
                     else
                     {
@@ -78,7 +93,7 @@ namespace QuickBackup
                     }
                     break;
                 case "BACK":
-                    if (File.Exists($@"CSR\MCP\QuickBackup\{slot}.zip"))
+                    if (File.Exists($@"{QuickBackupPath.QbRootPath}\{slot}.zip"))
                     {
                         DirectoryInfo saveDirectory = new DirectoryInfo($@"worlds\{worldName}");
                         if (saveDirectory.Exists)
@@ -86,7 +101,7 @@ namespace QuickBackup
                             Console.WriteLine("已移除旧存档.");
                             saveDirectory.Delete(true);
                         }
-                        ZipFile.ExtractToDirectory($@"CSR\MCP\QuickBackup\{slot}.zip", $@"worlds\");
+                        ZipFile.ExtractToDirectory($@"{QuickBackupPath.QbRootPath}\{slot}.zip", $@"worlds\");
                         Console.WriteLine("回档已完成.");
                     }
                     else
@@ -99,9 +114,9 @@ namespace QuickBackup
             }
             Console.WriteLine("即将重启服务器.");
             Thread.Sleep(5000);
-            Process.Start(@"..\MCModDllExe\debug.bat");
+            Process.Start(loaderPath);
 
-            logWriter.WriteLine($"[{DateTime.Now}]Finish {mod} {slot} {worldName} {comment}");
+            logWriter.WriteLine($"[{DateTime.Now}]Finish {mode} {slot} {worldName} {comment}");
             logWriter.Close();
         }
     }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using YamlDotNet.Serialization;
 
-namespace MCDTest
+namespace MCPromoter
 {
     public class RawConfig
     {
@@ -32,6 +32,7 @@ StaAutoSwitchesFreq: 60
 FakePlayer:
   Address: ''
   Port:  ''
+AutoBackupTime: '03:00'
 
 ### ===========
 ### Permissions
@@ -56,6 +57,7 @@ PluginAdmin:
 # 反作弊
 AntiCheat:
   Enable: true
+  ForceGamemode: true
   AllowedCmd:
     - '/help'
     - '/tickingarea'
@@ -84,6 +86,7 @@ PluginDisable:
       OnlineMinutes: false
     SuicideMessages: false
     DeathPointReport: false
+    AutoBackupServer: false
 
 # 日志记录
 Logging:
@@ -128,6 +131,8 @@ ConsoleOutput:
         public ConsoleOutput ConsoleOutput { get; set; }//控制台输出
         [YamlMember(Alias = "FakePlayer", ApplyNamingConventions = false)]
         public FakePlayer FakePlayer { get; set; }
+        [YamlMember(Alias = "AutoBackupTime", ApplyNamingConventions = false)]
+        public string AutoBackupTime { get; set; }
     }
     
     public class PluginLoader
@@ -202,6 +207,8 @@ ConsoleOutput:
         public bool Enable { get; set; }//启用
         [YamlMember(Alias = "AllowedCmd", ApplyNamingConventions = false)]
         public string[] AllowedCmd { get; set; }//允许的指令
+        [YamlMember(Alias = "ForceGamemode", ApplyNamingConventions = false)]
+        public bool ForceGamemode { get; set; }//强制游戏模式
     }
 
     public class PluginDisable
@@ -221,6 +228,8 @@ ConsoleOutput:
         public bool SuicideMessages { get; set; }//自定义自杀信息
         [YamlMember(Alias = "DeathPointReport", ApplyNamingConventions = false)]
         public bool DeathPointReport { get; set; }//死亡点报告
+        [YamlMember(Alias = "AutoBackup", ApplyNamingConventions = false)]
+        public bool AutoBackup { get; set; }//自动备份
         [YamlIgnore]
         public bool QuickBackup { get; set; }//快速备份是否可用
     }
