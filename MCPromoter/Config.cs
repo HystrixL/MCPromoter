@@ -32,7 +32,10 @@ StaAutoSwitchesFreq: 60
 FakePlayer:
   Address: ''
   Port:  ''
-AutoBackupTime: '03:00'
+# 每日自动备份时间
+AutoBackupTime: '3:00'
+# 剑横扫伤害数量上限
+MaxDamageSplash: 10
 
 ### ===========
 ### Permissions
@@ -87,6 +90,7 @@ PluginDisable:
     SuicideMessages: false
     DeathPointReport: false
     AutoBackupServer: false
+    SplashDamage: false
 
 # 日志记录
 Logging:
@@ -117,6 +121,12 @@ ConsoleOutput:
         public string[] SuicideMessages { get; set; }//自定义自杀信息
         [YamlMember(Alias = "StaAutoSwitchesFreq", ApplyNamingConventions = false)]
         public int StaAutoSwitchesFreq { get; set; }//计分板自动切换频率
+        [YamlMember(Alias = "FakePlayer", ApplyNamingConventions = false)]
+        public FakePlayer FakePlayer { get; set; }
+        [YamlMember(Alias = "AutoBackupTime", ApplyNamingConventions = false)]
+        public string AutoBackupTime { get; set; }
+        [YamlMember(Alias = "MaxDamageSplash", ApplyNamingConventions = false)]
+        public int MaxDamageSplash { get; set; }
         [YamlMember(Alias = "WhiteList", ApplyNamingConventions = false)]
         public WhiteList WhiteList { get; set; }//插件内置白名单
         [YamlMember(Alias = "PluginAdmin", ApplyNamingConventions = false)]
@@ -129,10 +139,6 @@ ConsoleOutput:
         public Logging Logging { get; set; }//日志记录
         [YamlMember(Alias = "ConsoleOutput", ApplyNamingConventions = false)]
         public ConsoleOutput ConsoleOutput { get; set; }//控制台输出
-        [YamlMember(Alias = "FakePlayer", ApplyNamingConventions = false)]
-        public FakePlayer FakePlayer { get; set; }
-        [YamlMember(Alias = "AutoBackupTime", ApplyNamingConventions = false)]
-        public string AutoBackupTime { get; set; }
     }
     
     public class PluginLoader
@@ -230,6 +236,8 @@ ConsoleOutput:
         public bool DeathPointReport { get; set; }//死亡点报告
         [YamlMember(Alias = "AutoBackup", ApplyNamingConventions = false)]
         public bool AutoBackup { get; set; }//自动备份
+        [YamlMember(Alias = "SplashDamage", ApplyNamingConventions = false)]
+        public bool SplashDamage { get; set; }//伤害溅射
         [YamlIgnore]
         public bool QuickBackup { get; set; }//快速备份是否可用
     }

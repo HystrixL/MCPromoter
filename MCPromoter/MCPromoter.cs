@@ -12,6 +12,7 @@ using YamlDotNet.Serialization;
 using CSR;
 using MCPromoter;
 using YamlDotNet.Serialization.NamingConventions;
+using System.Web.Script.Serialization;
 
 namespace MCPromoter
 {
@@ -57,19 +58,6 @@ namespace MCPromoter
             "§2========================"
         };
 
-        private static readonly string[] PluginStatusTexts =
-        {
-            "§2========================",
-            $"§c§l{PluginInfo.Name} - {PluginInfo.Version}",
-            $"§o作者：{PluginInfo.Author}",
-            "§2========================",
-            $"{config.CmdPrefix}mcp help      获取MCP模块帮助",
-            $"{config.CmdPrefix}mcp initialize        初始化MCP模块",
-            $"{config.CmdPrefix}mcp setting [option] [value]       修改MCP模块设置",
-            $"{config.CmdPrefix}mcp setting reload      重载MCP配置文件",
-            "§2========================"
-        };
-
         private static readonly string[] PluginSettingHelpTexts =
         {
             "§2========================",
@@ -78,13 +66,32 @@ namespace MCPromoter
             "staautoswitchesfreq <newFreq>      修改计分板自动切换频率",
             "whitelist [true|false]      开启/关闭插件内置计分板",
             "pluginadmin [true|false]       开启/关闭插件管理员",
+            "damagesplash [true|false|int]      开启/关闭/修改剑横扫伤害数量上限",
             "§2========================"
         };
+
+        #region https: //github.com/zhkj-liuxiaohua/MGPlugins
+
+        static Hashtable swords = new Hashtable();
+        static JavaScriptSerializer javaScriptSerializer = new JavaScriptSerializer();
+
+        static void initSwordIds()
+        {
+            swords["wooden_sword"] = true;
+            swords["stone_sword"] = true;
+            swords["iron_sword"] = true;
+            swords["diamond_sword"] = true;
+            swords["golden_sword"] = true;
+            swords["netherite_sword"] = true;
+        }
+
+        #endregion
+
 
         public static void StandardizedFeedback(string targetName, string content)
         {
             _mapi.runcmd($"tellraw {targetName} {{\"rawtext\":[{{\"text\":\"{content}\"}}]}}");
-            Regex regex = new Regex("(§+.)");
+            Regex regex = new Regex("§[\\w]");
             string rawContent = regex.Replace(content, "");
             if (config.Logging.Plugin) LogsWriter("MCP", rawContent);
             if (config.ConsoleOutput.Plugin) ConsoleOutputter("MCP", rawContent);
@@ -123,7 +130,9 @@ namespace MCPromoter
         {
             "Dig", "Placed", "Killed", "Tasks", "Dead", "OnlineMinutes"
         };
+
         static int StaAutoSwitchesTimer = 0;
+
         public static void StaAutoSwitches(Object source, ElapsedEventArgs e)
         {
             _mapi.runcmd($"scoreboard objectives setdisplay sidebar {StaAutoSwitchesList[StaAutoSwitchesTimer]}");
@@ -141,8 +150,14 @@ namespace MCPromoter
         {
             if (DateTime.Now.ToString("t") == config.AutoBackupTime)
             {
-                Process.Start(PluginPath.QbHelperPath,
-                    $"MAKE {config.WorldName} AUTO {DateTime.Now:MMdd}EverydayAutoBackup|每日自动备份 {config.PluginLoader.CustomizationPath}");
+                StandardizedFeedback("@a", $"服务器将在§l5秒§r后重启进行每日自动备份，预计需要一分钟");
+                Task.Run(async delegate
+                {
+                    await Task.Delay(5000);
+                    Process.Start(PluginPath.QbHelperPath,
+                        $"MAKE {config.WorldName} AUTO {DateTime.Now:MMdd}EverydayAutoBackup|每日自动备份 {config.PluginLoader.CustomizationPath}");
+                    _mapi.runcmd("stop");
+                });
             }
         }
 
@@ -218,15 +233,15 @@ namespace MCPromoter
                     qbIniFile.IniWriteValue(slot, "Comment", "null");
                     qbIniFile.IniWriteValue(slot, "Size", "0");
                 }
-                
-                ConsoleOutputter("MCP",$@"请将QuickBackup.exe放入{PluginPath.QbHelperPath}以启用QuickBackup");
-                LogsWriter("MCP",$@"请将QuickBackup.exe放入{PluginPath.QbHelperPath}以启用QuickBackup");
+
+                ConsoleOutputter("MCP", $@"请将QuickBackup.exe放入{PluginPath.QbHelperPath}以启用QuickBackup");
+                LogsWriter("MCP", $@"请将QuickBackup.exe放入{PluginPath.QbHelperPath}以启用QuickBackup");
             }
 
             File.WriteAllText(PluginPath.ConfigPath, RawConfig.rawConfig);
 
-            ConsoleOutputter("MCP",$@"已完成插件配置文件的初始化.配置文件位于{PluginPath.ConfigPath} .请完成配置文件后重启服务器.");
-            LogsWriter("MCP",$@"已完成插件配置文件的初始化.配置文件位于{PluginPath.ConfigPath} .请完成配置文件后重启服务器.");
+            ConsoleOutputter("MCP", $@"已完成插件配置文件的初始化.配置文件位于{PluginPath.ConfigPath} .请完成配置文件后重启服务器.");
+            LogsWriter("MCP", $@"已完成插件配置文件的初始化.配置文件位于{PluginPath.ConfigPath} .请完成配置文件后重启服务器.");
         }
 
         public static void LoadConfig()
@@ -238,10 +253,23 @@ namespace MCPromoter
 
             if (!Directory.Exists(PluginPath.QbRootPath) || !File.Exists(PluginPath.QbHelperPath))
             {
-                ConsoleOutputter("MCP","快速备份QuickBackup核心组件丢失，@qb无法使用");
-                LogsWriter("MCP","快速备份QuickBackup核心组件丢失，@qb无法使用");
-                ConsoleOutputter("MCP",$@"请将QuickBackup.exe放入{PluginPath.QbRootPath}以启用QuickBackup");
-                LogsWriter("MCP",$@"请将QuickBackup.exe放入{PluginPath.QbRootPath}以启用QuickBackup");
+                ConsoleOutputter("MCP", "快速备份QuickBackup核心组件丢失，@qb无法使用");
+                LogsWriter("MCP", "快速备份QuickBackup核心组件丢失，@qb无法使用");
+                ConsoleOutputter("MCP", $@"请将QuickBackup.exe放入{PluginPath.QbRootPath}以启用QuickBackup");
+                LogsWriter("MCP", $@"请将QuickBackup.exe放入{PluginPath.QbRootPath}以启用QuickBackup");
+                config.PluginDisable.Futures.QuickBackup = true;
+            }
+            if (config.WorldName.Contains(" "))
+            {
+                ConsoleOutputter("MCP", "存档名包含空格,QuickBackup无法工作!请进行修改.");
+                LogsWriter("MCP", "存档名包含空格,QuickBackup无法工作!请进行修改.");
+                config.PluginDisable.Futures.QuickBackup = true;
+            }
+
+            if (!Directory.Exists($@"worlds\{config.WorldName}"))
+            {
+                ConsoleOutputter("MCP", "找不到指定存档,QuickBackup无法工作!请检查配置文件.");
+                LogsWriter("MCP", "找不到指定存档,QuickBackup无法工作!请检查配置文件.");
                 config.PluginDisable.Futures.QuickBackup = true;
             }
 
@@ -275,7 +303,7 @@ namespace MCPromoter
                 forceGamemodeTimer.Start();
             }
 
-            if (config.PluginDisable.Futures.AutoBackup)
+            if (config.PluginDisable.Futures.AutoBackup||config.PluginDisable.Futures.QuickBackup)
             {
                 if (autoBackupTimer != null)
                 {
@@ -310,12 +338,12 @@ namespace MCPromoter
 
             if (!File.Exists(config.PluginLoader.CustomizationPath))
             {
-                ConsoleOutputter("MCP","找不到指定的插件加载器!请检查配置文件.");
-                LogsWriter("MCP","找不到指定的插件加载器!请检查配置文件.");
+                ConsoleOutputter("MCP", "找不到指定的插件加载器,QuickBackup无法重启服务器!请检查配置文件.");
+                LogsWriter("MCP", "找不到指定的插件加载器,QuickBackup无法重启服务器!请检查配置文件.");
             }
 
-            ConsoleOutputter("MCP","已载入配置文件。");
-            LogsWriter("MCP","已载入配置文件。");
+            ConsoleOutputter("MCP", "已载入配置文件。");
+            LogsWriter("MCP", "已载入配置文件。");
         }
 
         public static void Init(MCCSAPI api)
@@ -330,7 +358,7 @@ namespace MCPromoter
 
             _mapi = api;
             LoadConfig();
-            
+
             api.addAfterActListener(EventKey.onInputText, x =>
             {
                 var e = BaseEvent.getFrom(x) as InputTextEvent;
@@ -340,7 +368,7 @@ namespace MCPromoter
                 string msg = e.msg;
                 var position = (x: ((int) e.XYZ.x).ToString(), y: ((int) e.XYZ.y).ToString(),
                     z: ((int) e.XYZ.z).ToString(), world: e.dimension);
-                CsPlayer csPlayer = new CsPlayer(api,e.playerPtr);
+                CsPlayer csPlayer = new CsPlayer(api, e.playerPtr);
 
                 if (msg.StartsWith(config.CmdPrefix))
                 {
@@ -387,9 +415,21 @@ namespace MCPromoter
                         case "mcp":
                             if (argsList[1] == "status")
                             {
-                                foreach (var pluginStatusText in PluginStatusTexts)
+                                string[] pluginStatusTexts =
                                 {
-                                    StandardizedFeedback(name,pluginStatusText);
+                                    "§2========================",
+                                    $"§c§l{PluginInfo.Name} - {PluginInfo.Version}",
+                                    $"§o作者：{PluginInfo.Author}",
+                                    "§2========================",
+                                    $"{config.CmdPrefix}mcp help      获取MCP模块帮助",
+                                    $"{config.CmdPrefix}mcp initialize        初始化MCP模块",
+                                    $"{config.CmdPrefix}mcp setting [option] [value]       修改MCP模块设置",
+                                    $"{config.CmdPrefix}mcp setting reload      重载MCP配置文件",
+                                    "§2========================"
+                                };
+                                foreach (var pluginStatusText in pluginStatusTexts)
+                                {
+                                    StandardizedFeedback(name, pluginStatusText);
                                 }
                             }
                             else if (argsList[1] == "help")
@@ -422,7 +462,17 @@ namespace MCPromoter
                                     StandardizedFeedback("@a", "[MCP]配置文件已重新载入。");
                                     return true;
                                 }
-                                
+
+                                if (argsList[2] == "help")
+                                {
+                                    foreach (var pluginSettingHelpText in PluginSettingHelpTexts)
+                                    {
+                                        StandardizedFeedback(name, pluginSettingHelpText);
+                                    }
+
+                                    return true;
+                                }
+
                                 switch (argsList[2])
                                 {
                                     case "anticheat":
@@ -452,7 +502,8 @@ namespace MCPromoter
                                     case "staautoswitchesfreq":
                                     {
                                         string newConfig = argsList[3];
-                                        StandardizedFeedback("@a",$"MCP计分板自动切换周期已被{name}从{config.StaAutoSwitchesFreq}修改为{newConfig}");
+                                        StandardizedFeedback("@a",
+                                            $"计分板自动切换周期已被{name}从{config.StaAutoSwitchesFreq}修改为{newConfig}");
                                         config.StaAutoSwitchesFreq = int.Parse(newConfig);
                                         break;
                                     }
@@ -469,6 +520,7 @@ namespace MCPromoter
                                         {
                                             StandardizedFeedback(name, "仅允许使用true或false来设置内置白名单系统状态");
                                         }
+
                                         break;
                                     }
                                     case "pluginadmin":
@@ -484,14 +536,26 @@ namespace MCPromoter
                                         {
                                             StandardizedFeedback(name, "仅允许使用true或false来设置插件管理员系统状态");
                                         }
+
                                         break;
                                     }
-                                    case "help":
+                                    case "damagesplash":
                                     {
-                                        foreach (var pluginSettingHelpText in PluginSettingHelpTexts)
+                                        string newConfig = argsList[3];
+                                        if (newConfig == "true" || newConfig == "false")
                                         {
-                                            StandardizedFeedback(name,pluginSettingHelpText);
+                                            StandardizedFeedback("@a",
+                                                bool.Parse(newConfig)
+                                                    ? $"{name}已开启剑横扫伤害,数量上限为{config.MaxDamageSplash}"
+                                                    : $"{name}已关闭剑横扫伤害");
                                         }
+                                        else
+                                        {
+                                            StandardizedFeedback("@a",
+                                                $"剑横扫伤害数量上限已被{name}从{config.MaxDamageSplash}修改为{newConfig}");
+                                            config.StaAutoSwitchesFreq = int.Parse(newConfig);
+                                        }
+
                                         break;
                                     }
                                 }
@@ -692,22 +756,32 @@ namespace MCPromoter
                             break;
                         case "network":
                             string[] ipport = csPlayer.IpPort.Split('|');
-                            if (argsList[1]=="ip")
+                            if (argsList[1] == "ip")
                             {
                                 string ip = ipport[0];
-                                StandardizedFeedback("@a",$"§l{name}§r的IP地址为§e§l{ip}");
+                                StandardizedFeedback("@a", $"§l{name}§r的IP地址为§e§l{ip}");
                             }
-                            else if (argsList[1]=="port")
+                            else if (argsList[1] == "port")
                             {
                                 string port = ipport[1];
-                                StandardizedFeedback("@a",$"§l{name}§r的端口号为§e§l{port}");
+                                StandardizedFeedback("@a", $"§l{name}§r的端口号为§e§l{port}");
                             }
-                            else if(argsList[1]=="ping")
+                            else if (argsList[1] == "ping")
                             {
                                 Ping ping = new Ping();
                                 PingReply pingReply = ping.Send(ipport[0]);
-                                StandardizedFeedback("@a",$"服务器到§l{name}的延迟为§e§l{pingReply.RoundtripTime.ToString()}§r§lms");
+                                if (pingReply.Status == IPStatus.Success)
+                                {
+                                    StandardizedFeedback("@a",
+                                        $"服务器到§l{name}§r的延迟为§e§l{pingReply.RoundtripTime.ToString()}§r§lms");
+                                }
+                                else
+                                {
+                                    StandardizedFeedback("@a",
+                                        $"服务器到§l{name}§r的延迟测试失败.原因为{pingReply.Status.ToString()}");
+                                }
                             }
+
                             break;
                         case "rc":
                             string command = msg.Replace($"{config.CmdPrefix}rc ", "");
@@ -725,11 +799,12 @@ namespace MCPromoter
                             {
                                 if (bool.Parse(argsList[2]))
                                 {
-                                    if (staAutoSwitchesTimer!=null)
+                                    if (staAutoSwitchesTimer != null)
                                     {
                                         StandardizedFeedback("@a", "计分板自动切换正在运行中，请勿重复开启.");
                                         return true;
                                     }
+
                                     staAutoSwitchesTimer = new Timer();
                                     staAutoSwitchesTimer.Interval = config.StaAutoSwitchesFreq * 1000;
                                     staAutoSwitchesTimer.Elapsed += StaAutoSwitches;
@@ -739,11 +814,12 @@ namespace MCPromoter
                                 }
                                 else
                                 {
-                                    if (staAutoSwitchesTimer==null)
+                                    if (staAutoSwitchesTimer == null)
                                     {
                                         StandardizedFeedback("@a", "计分板自动切换未开启，请勿重复关闭.");
                                         return true;
                                     }
+
                                     staAutoSwitchesTimer.Stop();
                                     staAutoSwitchesTimer.Dispose();
                                     StandardizedFeedback("@a", "已关闭计分板自动切换.");
@@ -995,7 +1071,7 @@ namespace MCPromoter
                         case "qb":
                             if (config.PluginDisable.Futures.QuickBackup)
                             {
-                                StandardizedFeedback("@a", "快速备份QuickBackup核心组件丢失，@qb无法使用");
+                                StandardizedFeedback("@a", "@qb已被插件自动禁用,请检查加载提示.");
                                 return true;
                             }
 
@@ -1012,6 +1088,12 @@ namespace MCPromoter
                                 if (int.Parse(slot) < 1 || int.Parse(slot) > 5)
                                 {
                                     StandardizedFeedback("@a", $"[槽位{slot}]无效。槽位必须是1~5的整数，请重新指定槽位。");
+                                    return true;
+                                }
+
+                                if (!Directory.Exists($@"worlds\{config.WorldName}"))
+                                {
+                                    StandardizedFeedback("@a","找不到待备份的存档,请检查配置文件!");
                                     return true;
                                 }
 
@@ -1094,6 +1176,69 @@ namespace MCPromoter
                 return true;
             });
 
+            #region https: //github.com/zhkj-liuxiaohua/MGPlugins
+
+            api.addAfterActListener(EventKey.onAttack, x =>
+            {
+                if (config.PluginDisable.Futures.SplashDamage) return true;
+
+                var e = BaseEvent.getFrom(x) as AttackEvent;
+                if (e == null) return true;
+
+                if (!e.isstand) return true;
+                CsPlayer csPlayer = new CsPlayer(api, e.playerPtr);
+                CsActor csActor = new CsActor(api, e.attackedentityPtr);
+                var hand = javaScriptSerializer.Deserialize<ArrayList>(csPlayer.HandContainer);
+                if (hand != null && hand.Count > 0)
+                {
+                    var mainHand = hand[0] as Dictionary<string, object>;
+                    if (mainHand != null)
+                    {
+                        object oid;
+                        if (mainHand.TryGetValue("rawnameid", out oid))
+                        {
+                            string rid = oid as string;
+                            var oisSword = swords[rid];
+                            if (oisSword != null && (bool) oisSword)
+                            {
+                                //开始执行溅射伤害操作
+                                var pdata = csActor.Position;
+                                var aXYZ = javaScriptSerializer.Deserialize<Vec3>(csActor.Position);
+                                var list = CsActor.getsFromAABB(api, csActor.DimensionId, aXYZ.x - 2, aXYZ.y - 1,
+                                    aXYZ.z - 2,
+                                    aXYZ.x + 2, aXYZ.y + 1, aXYZ.z + 2);
+                                if (list != null && list.Count > 0)
+                                {
+                                    int count = 0;
+                                    foreach (IntPtr aptr in list)
+                                    {
+                                        if (aptr != e.attackedentityPtr)
+                                        {
+                                            CsActor spa = new CsActor(api, aptr);
+                                            if (((spa.TypeId & 0x100) == 0x100))
+                                            {
+                                                spa.hurt(e.playerPtr, ActorDamageCause.EntityAttack, 1, true, false);
+                                                ++count;
+                                            }
+                                        }
+
+                                        if (count >= config.MaxDamageSplash)
+                                        {
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return true;
+            });
+
+            #endregion
+
+            initSwordIds();
             api.addAfterActListener(EventKey.onMobDie, x =>
             {
                 var e = BaseEvent.getFrom(x) as MobDieEvent;
@@ -1243,7 +1388,7 @@ namespace MCPromoter
                 string[] blockWords =
                 {
                     "Killed", "Dead", "Dig", "Placed", "Health", "_CounterCache", "Tasks", "OnlineMinutes",
-                    "No targets matched selector","game mode to Default"
+                    "No targets matched selector", "game mode to Default"
                 };
                 foreach (var blockWord in blockWords)
                 {
@@ -1277,23 +1422,23 @@ namespace MCPromoter
                 return false;
             });
 
-            api.addAfterActListener(EventKey.onServerCmd, x =>
+            api.addBeforeActListener(EventKey.onServerCmd, x =>
             {
                 var e = BaseEvent.getFrom(x) as ServerCmdEvent;
                 if (e == null) return true;
 
                 string cmd = e.cmd;
 
-                if (cmd=="mcp setting reload")
+                if (cmd == "mcp setting reload")
                 {
                     LoadConfig();
-                    if (config.Logging.Plugin) LogsWriter("MCP","配置文件已重新载入。");
-                    if (config.ConsoleOutput.Plugin) ConsoleOutputter("MCP","配置文件已重新载入。");
+                    if (config.Logging.Plugin) LogsWriter("MCP", "配置文件已重新载入。");
+                    if (config.ConsoleOutput.Plugin) ConsoleOutputter("MCP", "配置文件已重新载入。");
                 }
-                else if (cmd=="stop")
+                else if (cmd == "stop")
                 {
-                    
                 }
+
                 return true;
             });
 
@@ -1314,8 +1459,8 @@ namespace MCPromoter
                 else
                 {
                     playerDatas.Add(name, new PlayerDatas {Name = name, Uuid = uuid, Xuid = xuid});
-                    if (config.Logging.Plugin) LogsWriter("MCP",$"新实例化用于存储{name}信息的PlayerDatas类");
-                    if (config.ConsoleOutput.Plugin) ConsoleOutputter("MCP",$"新实例化用于存储{name}信息的PlayerDatas类");
+                    if (config.Logging.Plugin) LogsWriter("MCP", $"新实例化用于存储{name}信息的PlayerDatas类");
+                    if (config.ConsoleOutput.Plugin) ConsoleOutputter("MCP", $"新实例化用于存储{name}信息的PlayerDatas类");
                 }
 
                 if (!config.WhiteList.Enable)
@@ -1324,6 +1469,7 @@ namespace MCPromoter
                     if (config.ConsoleOutput.PlayerOnlineOffline) ConsoleOutputter(name, " 加入了服务器.");
                     return true;
                 }
+
                 foreach (var player in config.WhiteList.PlayerList)
                 {
                     if (player.Name == name && player.Xuid == xuid)
@@ -1340,8 +1486,8 @@ namespace MCPromoter
                     if (config.Logging.PlayerOnlineOffline) LogsWriter(name, " 尝试加入服务器.");
                     if (config.ConsoleOutput.PlayerOnlineOffline) ConsoleOutputter(name, " 尝试加入服务器.");
                     api.runcmd($"kick {name} 您未受邀加入该服务器，详情请咨询Hil。");
-                    if(config.ConsoleOutput.Plugin) ConsoleOutputter("MCP",$"{name}未受邀加入该服务器，已自动踢出。");
-                    if(config.Logging.Plugin) LogsWriter("MCP",$"{name}未受邀加入该服务器，已自动踢出。");
+                    if (config.ConsoleOutput.Plugin) ConsoleOutputter("MCP", $"{name}未受邀加入该服务器，已自动踢出。");
+                    if (config.Logging.Plugin) LogsWriter("MCP", $"{name}未受邀加入该服务器，已自动踢出。");
                 });
 
                 return true;
