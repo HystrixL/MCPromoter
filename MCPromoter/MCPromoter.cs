@@ -21,6 +21,7 @@ namespace MCPromoter
         private static MCCSAPI _mapi;
 
         private static Config config;
+        private static Dictionary<string, PlayerDatas> playerDatas = new Dictionary<string, PlayerDatas>();
         private static Timer onlineMinutesAccTimer = null;
         private static Timer forceGamemodeTimer = null;
         private static Timer autoBackupTimer = null;
@@ -28,7 +29,7 @@ namespace MCPromoter
         private static readonly string[] HelpTexts =
         {
             "§2========================",
-            "= <表达式>    计算表达式并输出",
+            "calc <表达式>    计算表达式/物品数量",
             "back      返回死亡地点",
             "bot [spawn|kill|tp] <BOT名>   召唤/杀死/传送bot",
             "bot list  列出服务器内存在的bot",
@@ -40,6 +41,7 @@ namespace MCPromoter
             "kill      自杀(不计入死亡榜)",
             "mg [true|false]   开启/关闭生物破坏",
             "network [ip|port|ping]     查询玩家ip/端口/延迟",
+            "om <玩家名> <消息>      向某位离线玩家发送离线消息",
             "qs     发起快速跳过夜晚投票",
             "qs [accept|refuse]     同意/拒绝快速跳过夜晚",
             "qb make <槽位> <注释>      快速备份存档(需指定槽位及注释)(槽位范围1~5)",
@@ -67,6 +69,7 @@ namespace MCPromoter
             "whitelist [true|false]      开启/关闭插件内置计分板",
             "pluginadmin [true|false]       开启/关闭插件管理员",
             "damagesplash [true|false|int]      开启/关闭/修改剑横扫伤害数量上限",
+            "offlinemessage [true|false]    开启/关闭离线消息",
             "§2========================"
         };
 
@@ -195,7 +198,7 @@ namespace MCPromoter
             return length;
         }
 
-        public static void Initialize()
+        public static void InitializePlugin()
         {
             DirectoryInfo pluginRootDirectory = new DirectoryInfo(PluginPath.RootPath);
             if (!pluginRootDirectory.Exists)
@@ -238,18 +241,26 @@ namespace MCPromoter
                 LogsWriter("MCP", $@"请将QuickBackup.exe放入{PluginPath.QbHelperPath}以启用QuickBackup");
             }
 
+            File.WriteAllText(PluginPath.PlayerDatasPath, javaScriptSerializer.Serialize(playerDatas));
             File.WriteAllText(PluginPath.ConfigPath, RawConfig.rawConfig);
 
             ConsoleOutputter("MCP", $@"已完成插件配置文件的初始化.配置文件位于{PluginPath.ConfigPath} .请完成配置文件后重启服务器.");
             LogsWriter("MCP", $@"已完成插件配置文件的初始化.配置文件位于{PluginPath.ConfigPath} .请完成配置文件后重启服务器.");
         }
 
-        public static void LoadConfig()
+        public static void LoadPlugin(bool firstLoad = false)
         {
-            if (!File.Exists(PluginPath.ConfigPath)) Initialize();
+            if (!File.Exists(PluginPath.ConfigPath)) InitializePlugin();
             string configText = File.ReadAllText(PluginPath.ConfigPath);
             config = new DeserializerBuilder().WithNamingConvention(UnderscoredNamingConvention.Instance).Build()
                 .Deserialize<Config>(configText);
+            
+            if (firstLoad)
+            {
+                string savedPlayerDatas = File.ReadAllText(PluginPath.PlayerDatasPath);
+                if (!string.IsNullOrWhiteSpace(savedPlayerDatas))
+                    playerDatas = javaScriptSerializer.Deserialize<Dictionary<string, PlayerDatas>>(savedPlayerDatas);
+            }
 
             if (!Directory.Exists(PluginPath.QbRootPath) || !File.Exists(PluginPath.QbHelperPath))
             {
@@ -259,6 +270,7 @@ namespace MCPromoter
                 LogsWriter("MCP", $@"请将QuickBackup.exe放入{PluginPath.QbRootPath}以启用QuickBackup");
                 config.PluginDisable.Futures.QuickBackup = true;
             }
+
             if (config.WorldName.Contains(" "))
             {
                 ConsoleOutputter("MCP", "存档名包含空格,QuickBackup无法工作!请进行修改.");
@@ -303,7 +315,7 @@ namespace MCPromoter
                 forceGamemodeTimer.Start();
             }
 
-            if (config.PluginDisable.Futures.AutoBackup||config.PluginDisable.Futures.QuickBackup)
+            if (config.PluginDisable.Futures.AutoBackup || config.PluginDisable.Futures.QuickBackup)
             {
                 if (autoBackupTimer != null)
                 {
@@ -348,16 +360,14 @@ namespace MCPromoter
 
         public static void Init(MCCSAPI api)
         {
-            Dictionary<string, PlayerDatas> playerDatas = new Dictionary<string, PlayerDatas>();
-
-            ArrayList onlinePlayer = new ArrayList();
-            ArrayList acceptPlayer = new ArrayList();
+            List<string> onlinePlayer = new List<string>();
+            List<string> acceptPlayer = new List<string>();
             Timer staAutoSwitchesTimer = null;
             bool isQuickSleep = false;
             string quickSleepName = "";
 
             _mapi = api;
-            LoadConfig();
+            LoadPlugin(true);
 
             api.addAfterActListener(EventKey.onInputText, x =>
             {
@@ -458,7 +468,7 @@ namespace MCPromoter
                             {
                                 if (argsList[2] == "reload")
                                 {
-                                    LoadConfig();
+                                    LoadPlugin();
                                     StandardizedFeedback("@a", "[MCP]配置文件已重新载入。");
                                     return true;
                                 }
@@ -558,6 +568,22 @@ namespace MCPromoter
 
                                         break;
                                     }
+                                    case "offlinemessage":
+                                    {
+                                        string newConfig = argsList[3];
+                                        if (newConfig == "true" || newConfig == "false")
+                                        {
+                                            config.PluginDisable.Futures.OfflineMessage = bool.Parse(newConfig);
+                                            StandardizedFeedback("@a",
+                                                newConfig == "true" ? $"{name}已开启离线消息" : $"{name}已关闭离线消息");
+                                        }
+                                        else
+                                        {
+                                            StandardizedFeedback(name, "仅允许使用true或false来设置离线消息状态");
+                                        }
+
+                                        break;
+                                    }
                                 }
 
                                 string newYaml = new Serializer().Serialize(config);
@@ -570,10 +596,74 @@ namespace MCPromoter
                             }
 
                             break;
-                        case "=":
-                            string expression = msg.Replace($"{config.CmdPrefix}= ", "");
-                            string result = new DataTable().Compute(expression, "").ToString();
-                            StandardizedFeedback("@a", $"{expression} = {result}");
+                        case "calc":
+                            string expression = argsList[1];
+                            //g个 z组 h盒
+                            if (!expression.Contains("h") && !expression.Contains("z") && expression.Contains("g"))
+                            {
+                                int totalItemNumber = int.Parse(expression.Replace("g", ""));
+                                int boxNumber = totalItemNumber / (3 * 9 * 64);
+                                int stackNumber = (totalItemNumber - boxNumber * (3 * 9 * 64)) / 64;
+                                int itemNumber = totalItemNumber - boxNumber * (3 * 9 * 64) - stackNumber * 64;
+                                StandardizedFeedback("@a",
+                                    $"§6{totalItemNumber}个§7物品共§e{boxNumber}盒§a{stackNumber}组§b{itemNumber}个§7.");
+                            }
+                            else if (expression.Contains("h") || expression.Contains("z") || expression.Contains("g"))
+                            {
+                                int boxNumber = 0;
+                                int stackNumber = 0;
+                                int itemNumber = 0;
+                                if (expression.Contains("h") && expression.Contains("z") && expression.Contains("g"))
+                                {
+                                    string[] originalNumber = expression.Split(new char[] {'h', 'z', 'g'});
+                                    boxNumber = int.Parse(originalNumber[0]);
+                                    stackNumber = int.Parse(originalNumber[1]);
+                                    itemNumber = int.Parse(originalNumber[2]);
+                                }
+                                else if (expression.Contains("h") && expression.Contains("z") &&
+                                         !expression.Contains("g"))
+                                {
+                                    string[] originalNumber = expression.Split(new char[] {'h', 'z'});
+                                    boxNumber = int.Parse(originalNumber[0]);
+                                    stackNumber = int.Parse(originalNumber[1]);
+                                }
+                                else if (expression.Contains("h") && !expression.Contains("z") &&
+                                         expression.Contains("g"))
+                                {
+                                    string[] originalNumber = expression.Split(new char[] {'h', 'g'});
+                                    boxNumber = int.Parse(originalNumber[0]);
+                                    itemNumber = int.Parse(originalNumber[1]);
+                                }
+                                else if (!expression.Contains("h") && expression.Contains("z") &&
+                                         expression.Contains("g"))
+                                {
+                                    string[] originalNumber = expression.Split(new char[] {'z', 'g'});
+                                    stackNumber = int.Parse(originalNumber[0]);
+                                    itemNumber = int.Parse(originalNumber[1]);
+                                }
+                                else if (expression.Contains("h") && !expression.Contains("z") &&
+                                         !expression.Contains("g"))
+                                {
+                                    string[] originalNumber = expression.Split(new char[] {'h'});
+                                    boxNumber = int.Parse(originalNumber[0]);
+                                }
+                                else if (!expression.Contains("h") && expression.Contains("z") &&
+                                         !expression.Contains("g"))
+                                {
+                                    string[] originalNumber = expression.Split(new char[] {'z'});
+                                    stackNumber = int.Parse(originalNumber[0]);
+                                }
+
+                                int totalItemNumber = boxNumber * (3 * 9 * 64) + stackNumber * 64 + itemNumber;
+                                StandardizedFeedback("@a",
+                                    $"§e{boxNumber}盒§a{stackNumber}组§b{itemNumber}个§7物品共§6{totalItemNumber}个§7.");
+                            }
+                            else
+                            {
+                                string result = new DataTable().Compute(expression, "").ToString();
+                                StandardizedFeedback("@a", $"{expression} = {result}");
+                            }
+
                             break;
                         case "here":
                             api.runcmd("playsound random.levelup @a");
@@ -783,6 +873,32 @@ namespace MCPromoter
                             }
 
                             break;
+                        case "om":
+                        {
+                            if (config.PluginDisable.Futures.OfflineMessage)
+                            {
+                                StandardizedFeedback(name, "离线消息已被管理员禁用,当前无法使用.");
+                                return true;
+                            }
+
+                            string recipient = argsList[1];
+                            string content = argsList[2];
+                            if (!playerDatas.ContainsKey(recipient))
+                            {
+                                StandardizedFeedback("@a", $"无法找到玩家{recipient}的收件地址!!");
+                            }
+                            else if (playerDatas[recipient].IsOnline)
+                            {
+                                StandardizedFeedback("@a", $"玩家{recipient}当前在线,无法投递信件.");
+                            }
+                            else
+                            {
+                                playerDatas[recipient].OfflineMessage.Add($"- §7[{DateTime.Now}]§r<{name}>:{content}");
+                                StandardizedFeedback(name, $"已向玩家{recipient}投递了一份离线消息.");
+                            }
+
+                            break;
+                        }
                         case "rc":
                             string command = msg.Replace($"{config.CmdPrefix}rc ", "");
                             bool cmdResult = api.runcmd(command);
@@ -1093,7 +1209,7 @@ namespace MCPromoter
 
                                 if (!Directory.Exists($@"worlds\{config.WorldName}"))
                                 {
-                                    StandardizedFeedback("@a","找不到待备份的存档,请检查配置文件!");
+                                    StandardizedFeedback("@a", "找不到待备份的存档,请检查配置文件!");
                                     return true;
                                 }
 
@@ -1431,12 +1547,26 @@ namespace MCPromoter
 
                 if (cmd == "mcp setting reload")
                 {
-                    LoadConfig();
+                    LoadPlugin();
                     if (config.Logging.Plugin) LogsWriter("MCP", "配置文件已重新载入。");
                     if (config.ConsoleOutput.Plugin) ConsoleOutputter("MCP", "配置文件已重新载入。");
+                    return false;
                 }
-                else if (cmd == "stop")
+
+                if (cmd == "stop")
                 {
+                    foreach (var playerData in playerDatas)
+                    {
+                        if (playerData.Value.IsOnline)
+                        {
+                            playerDatas[playerData.Key].IsOnline = false;
+                            api.runcmd($"kick {playerData.Value.Name}");
+                        }
+                    }
+
+                    string savedPlayerDatas = javaScriptSerializer.Serialize(playerDatas);
+                    File.WriteAllText(PluginPath.PlayerDatasPath, savedPlayerDatas);
+                    return true;
                 }
 
                 return true;
@@ -1453,15 +1583,33 @@ namespace MCPromoter
 
                 if (playerDatas.ContainsKey(name))
                 {
+                    playerDatas[name].Name = name;
                     playerDatas[name].IsOnline = true;
                     playerDatas[name].Uuid = uuid;
+                    playerDatas[name].Xuid = xuid;
                 }
                 else
                 {
-                    playerDatas.Add(name, new PlayerDatas {Name = name, Uuid = uuid, Xuid = xuid});
+                    playerDatas.Add(name, new PlayerDatas {Name = name, Uuid = uuid, Xuid = xuid, IsOnline = true});
                     if (config.Logging.Plugin) LogsWriter("MCP", $"新实例化用于存储{name}信息的PlayerDatas类");
                     if (config.ConsoleOutput.Plugin) ConsoleOutputter("MCP", $"新实例化用于存储{name}信息的PlayerDatas类");
                 }
+
+                if (!config.PluginDisable.Futures.OfflineMessage)
+                {
+                    Task.Run(async delegate
+                    {
+                        await Task.Delay(30000);
+                        StandardizedFeedback(name, $"你有 §l{playerDatas[name].OfflineMessage.Count} §r条未读离线消息.");
+                        foreach (var offlineMessage in playerDatas[name].OfflineMessage)
+                        {
+                            StandardizedFeedback(name, offlineMessage);
+                        }
+
+                        playerDatas[name].OfflineMessage.Clear();
+                    });
+                }
+
 
                 if (!config.WhiteList.Enable)
                 {

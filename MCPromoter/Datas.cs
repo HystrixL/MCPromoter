@@ -10,7 +10,7 @@ namespace MCPromoter
     public static class PluginInfo
     {
         public static string Name => "MinecraftPromoter";
-        public static string Version => "V2.5.0";
+        public static string Version => "V2.6.1";
         public static int VersioID
         {
             get
@@ -26,6 +26,7 @@ namespace MCPromoter
     public static class PluginPath
     {
         public static string RootPath = @"plugins\MCPromoter";
+        public static string PlayerDatasPath = $@"{RootPath}\playerDatas.json";
         public static string ConfigPath = $@"{RootPath}\config.yml";
         public static string LogsRootPath = $@"{RootPath}\Logs";
         public static string LogsPath = $@"{LogsRootPath}\{DateTime.Now:yyMMddHHmmss}.log";
@@ -60,5 +61,6 @@ namespace MCPromoter
         public string DeadWorld { get; set; }
 
         public bool IsOnline { get; set; } = true;
+        public List<string> OfflineMessage { get; set; } = new List<string>();
     }
 }

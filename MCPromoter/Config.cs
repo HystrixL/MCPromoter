@@ -91,6 +91,7 @@ PluginDisable:
     DeathPointReport: false
     AutoBackupServer: false
     SplashDamage: false
+    OfflineMessage: false
 
 # 日志记录
 Logging:
@@ -238,6 +239,8 @@ ConsoleOutput:
         public bool AutoBackup { get; set; }//自动备份
         [YamlMember(Alias = "SplashDamage", ApplyNamingConventions = false)]
         public bool SplashDamage { get; set; }//伤害溅射
+        [YamlMember(Alias = "OfflineMessage", ApplyNamingConventions = false)]
+        public bool OfflineMessage { get; set; }//离线消息
         [YamlIgnore]
         public bool QuickBackup { get; set; }//快速备份是否可用
     }
