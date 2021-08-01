@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ using CSR;
 using MCPromoter;
 using YamlDotNet.Serialization.NamingConventions;
 using System.Web.Script.Serialization;
+using WebSocketSharp;
 
 namespace MCPromoter
 {
@@ -22,6 +24,7 @@ namespace MCPromoter
 
         private static Config config;
         private static Dictionary<string, PlayerDatas> playerDatas = new Dictionary<string, PlayerDatas>();
+        private static WebSocket webSocket = null;
         private static Timer onlineMinutesAccTimer = null;
         private static Timer forceGamemodeTimer = null;
         private static Timer autoBackupTimer = null;
@@ -112,11 +115,24 @@ namespace MCPromoter
             Console.WriteLine($@"[{DateTime.Now.ToString()}]<{initiators}>{content}");
         }
 
-        public static void RemoveBot(string botName)
+        public static void BotListener(object sender, MessageEventArgs e)
         {
-            botName = botName.Remove(0, 4);
-            _mapi.runcmd($"tickingarea remove loader_{botName}");
-            StandardizedFeedback("@a", $"§ebot_{botName} 退出了游戏");
+            string receive = e.Data;
+            if (receive.Contains("\"type\": \"list\""))
+            {
+                FakePlayerData.List fakePlayerList = javaScriptSerializer.Deserialize<FakePlayerData.List>(receive);
+                string list = string.Join("、", fakePlayerList.data.list);
+                StandardizedFeedback("@a",$"服务器内存在假人 {list}");
+            }
+            else if (receive.Contains("\"type\": \"add\"")||receive.Contains("\"type\": \"remove\"")||receive.Contains("\"type\": \"connect\"")||receive.Contains("\"type\": \"disconnect\""))
+            {
+                FakePlayerData.Operation fakePlayerOperation =
+                    javaScriptSerializer.Deserialize<FakePlayerData.Operation>(receive);
+                if (!fakePlayerOperation.data.success)
+                {
+                    StandardizedFeedback("@a",$"操作假人{fakePlayerOperation.data.name}失败");
+                }
+            }
         }
 
         public static void ForceGamemode(Object source, ElapsedEventArgs e)
@@ -126,7 +142,7 @@ namespace MCPromoter
 
         public static void OnlineMinutesAcc(Object source, ElapsedEventArgs e)
         {
-            _mapi.runcmd($"scoreboard players add @a OnlineMinutes 1");
+            _mapi.runcmd($"scoreboard players add @a[tag=!BOT] OnlineMinutes 1");
         }
 
         static string[] StaAutoSwitchesList =
@@ -354,8 +370,25 @@ namespace MCPromoter
                 LogsWriter("MCP", "找不到指定的插件加载器,QuickBackup无法重启服务器!请检查配置文件.");
             }
 
-            ConsoleOutputter("MCP", "已载入配置文件。");
-            LogsWriter("MCP", "已载入配置文件。");
+            bool webSocketStatus;
+            if (!config.PluginDisable.Futures.FakePlayer)
+            {
+                try
+                {
+                    webSocket = new WebSocket($@"ws://{config.FakePlayer.Address}:{config.FakePlayer.Port}");
+                    webSocket.OnMessage += BotListener;
+                    webSocket.Connect();
+                }
+                catch
+                {
+                    ConsoleOutputter("MCP","无法连接至FakePlayer的WebSocket服务器,请检查设置.");
+                    LogsWriter("MCP","无法连接至FakePlayer的WebSocket服务器,请检查设置.");
+                    config.PluginDisable.Futures.FakePlayer = true;
+                }
+            }
+
+            ConsoleOutputter("MCP", "已完成初始化。");
+            LogsWriter("MCP", "已完成初始化。");
         }
 
         public static void Init(MCCSAPI api)
@@ -691,27 +724,36 @@ namespace MCPromoter
 
                             break;
                         case "bot":
+                            if (config.PluginDisable.Futures.FakePlayer)
+                            {
+                                StandardizedFeedback(name, "假人已被管理员禁用,当前无法使用.");
+                                return true;
+                            }
+                            
                             if (argsList[1] == "list")
                             {
-                                api.runcmd("say 服务器内存在机器人@e[tag=BOT]");
+                                webSocket.Send("{\"type\": \"list\"}");
                             }
                             else
                             {
-                                string botName = argsList[2];
-                                if (argsList[1] == "spawn")
+                                string botName = "bot_"+argsList[2];
+                                if (argsList[1] == "add")
                                 {
-                                    api.runcmd($"execute {name} ~~~ summon minecraft:player bot_{botName}");
-                                    api.runcmd($"tag @e[name=bot_{botName}] add BOT");
-                                    api.runcmd($"execute {name} ~~~ tickingarea add circle ~~~ 4 loader_{botName}");
-                                    StandardizedFeedback("@a", $"§ebot_{botName} 加入了游戏");
+                                    webSocket.Send($"{{\"type\": \"add\",\"data\": {{\"name\": \"{botName}\",\"skin\": \"steve\"}}}}");
+                                    webSocket.Send($"{{\"type\": \"connect\",\"data\": {{\"name\": \"{botName}\"}}}}");
                                 }
-                                else if (argsList[1] == "kill")
+                                else if (argsList[1] == "remove")
                                 {
-                                    api.runcmd($"kill @e[name=bot_{botName}]");
+                                    webSocket.Send($"{{\"type\": \"disconnect\", \"data\": {{ \"name\": \"{botName}\" }}}}");
+                                    webSocket.Send($"{{\"type\": \"remove\", \"data\": {{ \"name\": \"{botName}\" }}}}");
                                 }
                                 else if (argsList[1] == "tp")
                                 {
-                                    api.runcmd($"tp {name} @e[name=bot_{botName}]");
+                                    api.runcmd($"tp {name} {botName}");
+                                }
+                                else if (argsList[1]=="call")
+                                {
+                                    api.runcmd($"tp {botName} {name}");
                                 }
                             }
 
@@ -1368,7 +1410,7 @@ namespace MCPromoter
                 {
                     if (attackType == "entity.player.name")
                     {
-                        api.runcmd($"scoreboard players add @a[name={attackName}] Killed 1");
+                        api.runcmd($"scoreboard players add @a[name={attackName},tag=!BOT] Killed 1");
                     }
                 }
 
@@ -1381,6 +1423,8 @@ namespace MCPromoter
                         StandardizedFeedback("@a",
                             $"§r§l§f{deadName}§r§o§4 死于 §r§l§f{deadPosition.world}[{deadPosition.x},{deadPosition.y},{deadPosition.z}]");
                     }
+
+                    if (deadName.StartsWith("bot_")) return true;
 
                     playerDatas[deadName].DeadX = deadPosition.x;
                     playerDatas[deadName].DeadY = deadPosition.y;
@@ -1399,8 +1443,6 @@ namespace MCPromoter
                         }
                     }
                 }
-
-                if (deadName.StartsWith("bot_")) RemoveBot(deadName);
                 return true;
             });
 
@@ -1413,7 +1455,7 @@ namespace MCPromoter
                 string name = e.playername;
                 if (!string.IsNullOrEmpty(name))
                 {
-                    api.runcmd($"scoreboard players add @a[name={name}] Dig 1");
+                    api.runcmd($"scoreboard players add @a[name={name},tag=!BOT] Dig 1");
                 }
 
                 return true;
@@ -1428,7 +1470,7 @@ namespace MCPromoter
                 string name = e.playername;
                 if (!string.IsNullOrEmpty(name))
                 {
-                    api.runcmd($"scoreboard players add @a[name={name}] Placed 1");
+                    api.runcmd($"scoreboard players add @a[name={name},tag=!BOT] Placed 1");
                 }
 
                 return true;
@@ -1581,6 +1623,14 @@ namespace MCPromoter
                 string uuid = e.uuid;
                 string xuid = e.xuid;
 
+                if (name.StartsWith("bot_"))
+                {
+                    if (config.Logging.PlayerOnlineOffline) LogsWriter(name, " 加入了服务器.");
+                    if (config.ConsoleOutput.PlayerOnlineOffline) ConsoleOutputter(name, " 加入了服务器.");
+                    api.runcmd($"tag {name} add BOT");
+                    return true;
+                }
+
                 if (playerDatas.ContainsKey(name))
                 {
                     playerDatas[name].Name = name;
@@ -1649,7 +1699,7 @@ namespace MCPromoter
                 string name = e.playername;
                 if (config.Logging.PlayerOnlineOffline) LogsWriter(name, " 离开了服务器.");
                 if (config.ConsoleOutput.PlayerOnlineOffline) ConsoleOutputter(name, " 离开了服务器.");
-                playerDatas[name].IsOnline = false;
+                if(!name.StartsWith("bot_")) playerDatas[name].IsOnline = false;
                 return true;
             });
         }

@@ -74,6 +74,10 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml" />
+    <Reference Include="websocket-sharp, Version=1.0.2.59611, Culture=neutral, PublicKeyToken=5660b08a1845a91e">
+      <HintPath>..\packages\WebSocketSharp.1.0.3-rc11\lib\websocket-sharp.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="YamlDotNet, Version=11.0.0.0, Culture=neutral, PublicKeyToken=ec19458f3c15af5e, processorArchitecture=MSIL">
       <HintPath>..\packages\YamlDotNet.11.2.1\lib\net45\YamlDotNet.dll</HintPath>
     </Reference>
@@ -85,6 +89,7 @@
     <Compile Include="BDS\Plugin.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Datas.cs" />
+    <Compile Include="FPWebSocket.cs" />
     <Compile Include="Functions.cs" />
     <Compile Include="MCPromoter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

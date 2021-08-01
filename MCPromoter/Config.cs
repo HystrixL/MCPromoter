@@ -92,6 +92,7 @@ PluginDisable:
     AutoBackupServer: false
     SplashDamage: false
     OfflineMessage: false
+    FakePlayer: false
 
 # 日志记录
 Logging:
@@ -150,7 +151,7 @@ ConsoleOutput:
         public string CustomizationPath { get; set; }//自定义加载器路径
     }
 
-    public class FakePlayer
+    public partial class FakePlayer
     {
         [YamlMember(Alias = "Address", ApplyNamingConventions = false)]
         public string Address { get; set; }
@@ -241,6 +242,8 @@ ConsoleOutput:
         public bool SplashDamage { get; set; }//伤害溅射
         [YamlMember(Alias = "OfflineMessage", ApplyNamingConventions = false)]
         public bool OfflineMessage { get; set; }//离线消息
+        [YamlMember(Alias = "FakePlayer", ApplyNamingConventions = false)]
+        public bool FakePlayer { get; set; }//离线消息
         [YamlIgnore]
         public bool QuickBackup { get; set; }//快速备份是否可用
     }
