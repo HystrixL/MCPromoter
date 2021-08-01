@@ -87,19 +87,30 @@
     <Compile Include="BDS\Events.cs" />
     <Compile Include="BDS\MCCSAPI.cs" />
     <Compile Include="BDS\Plugin.cs" />
-    <Compile Include="Config.cs" />
-    <Compile Include="Datas.cs" />
-    <Compile Include="FPWebSocket.cs" />
-    <Compile Include="Functions.cs" />
+    <Compile Include="Datas\Config.cs" />
+    <Compile Include="Datas\Datas.cs" />
+    <Compile Include="Datas\HelpResources.cs" />
+    <Compile Include="Player\AntiCheat.cs" />
+    <Compile Include="Player\Command.cs" />
+    <Compile Include="Player\Interactive.cs" />
+    <Compile Include="Player\SplashDamage.cs" />
+    <Compile Include="Player\Status.cs" />
+    <Compile Include="Plugin\Declare.cs" />
+    <Compile Include="Plugin\FPWebSocket.cs" />
+    <Compile Include="Plugin\Init.cs" />
+    <Compile Include="Plugin\Output.cs" />
+    <Compile Include="Plugin\TimerEvent.cs" />
+    <Compile Include="Plugin\Tools.cs" />
     <Compile Include="MCPromoter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Server\ServerCmd.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="config.ini" />
     <None Include="packages.config" />
+    <None Include="Temp\config.ini" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="config.yml" />
+    <Content Include="Temp\config.yml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

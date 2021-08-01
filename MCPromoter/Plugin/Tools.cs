@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -8,6 +9,44 @@ using System.Threading.Tasks;
 
 namespace MCPromoter
 {
+    static class Tools
+    {
+        public static string FormatSize(long size)
+                {
+                    double d = (double) size;
+                    int i = 0;
+                    while ((d > 1024) && (i < 5))
+                    {
+                        d /= 1024;
+                        i++;
+                    }
+        
+                    string[] unit = {"B", "KB", "MB", "GB", "TB"};
+                    return (string.Format("{0} {1}", Math.Round(d, 2), unit[i]));
+                }
+        
+        
+                public static long GetWorldSize(String path)
+                {
+                    DirectoryInfo directoryInfo = new DirectoryInfo(path);
+                    long length = 0;
+                    foreach (FileSystemInfo fsi in directoryInfo.GetFileSystemInfos())
+                    {
+                        if (fsi is FileInfo)
+                        {
+                            length += ((FileInfo) fsi).Length;
+                        }
+                        else
+                        {
+                            length += GetWorldSize(fsi.FullName);
+                        }
+                    }
+        
+                    return length;
+                }
+    }
+
+    
 
     class SystemInfo
     {
