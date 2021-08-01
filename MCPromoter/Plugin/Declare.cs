@@ -17,7 +17,7 @@ namespace MCPromoter
         private static Timer autoBackupTimer = null;
         private static Timer staAutoSwitchesTimer = null;
         private static List<string> onlinePlayer = new List<string>();
-        private static List<string> acceptPlayer = new List<string>();
+        private static List<string> quickSleepAcceptPlayer = new List<string>();
         private static bool isQuickSleep = false;
         private static string quickSleepInitiator = "";
     }

@@ -746,17 +746,17 @@ namespace MCPromoter
                                     {
                                         isQuickSleep = true;
                                         quickSleepInitiator = name;
-                                        acceptPlayer.Clear();
-                                        acceptPlayer.Add(quickSleepInitiator);
+                                        quickSleepAcceptPlayer.Clear();
+                                        quickSleepAcceptPlayer.Add(quickSleepInitiator);
                                         StandardizedFeedback("@a",
                                             $"§6§l{quickSleepInitiator}发起快速跳过夜晚投票，请使用{config.CmdPrefix}qs accept投出支持票，使用{config.CmdPrefix}qs refuse投出反对票。");
                                         StandardizedFeedback("@a",
-                                            $"§6§l当前已有{acceptPlayer.Count}人投出支持票，至少需要{onlinePlayer.Count}人");
+                                            $"§6§l当前已有{quickSleepAcceptPlayer.Count}人投出支持票，至少需要{onlinePlayer.Count}人");
                                         StandardizedFeedback("@a", "§6§l投票将在18秒后结束。");
                                         _ = Task.Run(async delegate
                                         {
                                             await Task.Delay(18000);
-                                            if (acceptPlayer.Count >= onlinePlayer.Count)
+                                            if (quickSleepAcceptPlayer.Count >= onlinePlayer.Count)
                                             {
                                                 StandardizedFeedback("@a",
                                                     "§5§l深夜，一阵突如其来的反常疲惫侵袭了你的大脑，你失去意识倒在地上。当你醒来时，太阳正从东方冉冉升起。");
@@ -791,11 +791,11 @@ namespace MCPromoter
                             {
                                 if (isQuickSleep == true)
                                 {
-                                    if (!acceptPlayer.Contains(name))
+                                    if (!quickSleepAcceptPlayer.Contains(name))
                                     {
-                                        acceptPlayer.Add(name);
+                                        quickSleepAcceptPlayer.Add(name);
                                         StandardizedFeedback("@a",
-                                            $"§a{name}向{quickSleepInitiator}发起的快速跳过夜晚投票投出支持票.已有{acceptPlayer.Count}人投出支持票，至少需要{onlinePlayer.Count}人。");
+                                            $"§a{name}向{quickSleepInitiator}发起的快速跳过夜晚投票投出支持票.已有{quickSleepAcceptPlayer.Count}人投出支持票，至少需要{onlinePlayer.Count}人。");
                                     }
                                     else
                                     {
@@ -811,9 +811,9 @@ namespace MCPromoter
                             {
                                 if (isQuickSleep == true)
                                 {
-                                    if (acceptPlayer.Contains(name))
+                                    if (quickSleepAcceptPlayer.Contains(name))
                                     {
-                                        acceptPlayer.Remove(name);
+                                        quickSleepAcceptPlayer.Remove(name);
                                     }
 
                                     StandardizedFeedback("@a", $"§c{name}向{quickSleepInitiator}发起的快速跳过夜晚投票投出拒绝票.");
