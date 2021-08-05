@@ -8,20 +8,20 @@ namespace MCPromoter
         public static bool LoadNamePlugin(Events x)
         {
             var e = BaseEvent.getFrom(x) as LoadNameEvent;
-                if (e == null) return true;
+            if (e == null) return true;
 
-                string name = e.playername;
-                string uuid = e.uuid;
-                string xuid = e.xuid;
+            string name = e.playername;
+            string uuid = e.uuid;
+            string xuid = e.xuid;
+            bool isAllowLogin = false;
 
-                if (name.StartsWith("bot_"))
-                {
-                    if (config.Logging.PlayerOnlineOffline) LogsWriter(name, " 加入了服务器.");
-                    if (config.ConsoleOutput.PlayerOnlineOffline) ConsoleOutputter(name, " 加入了服务器.");
-                    _mapi.runcmd($"tag {name} add BOT");
-                    return true;
-                }
-
+            if (name.StartsWith("bot_"))
+            {
+                isAllowLogin = true;
+                _mapi.runcmd($"tag {name} add BOT");
+            }
+            else
+            {
                 if (playerDatas.ContainsKey(name))
                 {
                     playerDatas[name].Name = name;
@@ -41,34 +41,26 @@ namespace MCPromoter
                     Task.Run(async delegate
                     {
                         await Task.Delay(30000);
-                        StandardizedFeedback(name, $"你有 §l{playerDatas[name].OfflineMessage.Count} §r条未读离线消息.");
+                        StandardizedFeedback(name, $"您有 §l{playerDatas[name].OfflineMessage.Count} §r条未读离线消息.");
                         foreach (var offlineMessage in playerDatas[name].OfflineMessage)
-                        {
                             StandardizedFeedback(name, offlineMessage);
-                        }
 
                         playerDatas[name].OfflineMessage.Clear();
                     });
                 }
+            }
 
-
-                if (!config.WhiteList.Enable)
+            foreach (var player in config.WhiteList.PlayerList)
+            {
+                if (player.Name == name && player.Xuid == xuid)
                 {
-                    if (config.Logging.PlayerOnlineOffline) LogsWriter(name, " 加入了服务器.");
-                    if (config.ConsoleOutput.PlayerOnlineOffline) ConsoleOutputter(name, " 加入了服务器.");
-                    return true;
+                    isAllowLogin = true;
                 }
+            }
+            if (!config.WhiteList.Enable) isAllowLogin = true;
 
-                foreach (var player in config.WhiteList.PlayerList)
-                {
-                    if (player.Name == name && player.Xuid == xuid)
-                    {
-                        if (config.Logging.PlayerOnlineOffline) LogsWriter(name, " 加入了服务器.");
-                        if (config.ConsoleOutput.PlayerOnlineOffline) ConsoleOutputter(name, " 加入了服务器.");
-                        return true;
-                    }
-                }
-
+            if (!isAllowLogin)
+            {
                 Task.Run(async delegate
                 {
                     await Task.Delay(1000);
@@ -78,10 +70,10 @@ namespace MCPromoter
                     if (config.ConsoleOutput.Plugin) ConsoleOutputter("MCP", $"{name}未受邀加入该服务器，已自动踢出。");
                     if (config.Logging.Plugin) LogsWriter("MCP", $"{name}未受邀加入该服务器，已自动踢出。");
                 });
-
-                return true;
+            }
+            return true;
         }
-        
+
         public static bool PlayerLeftPlugin(Events x)
         {
             var e = BaseEvent.getFrom(x) as PlayerLeftEvent;
@@ -90,7 +82,7 @@ namespace MCPromoter
             string name = e.playername;
             if (config.Logging.PlayerOnlineOffline) LogsWriter(name, " 离开了服务器.");
             if (config.ConsoleOutput.PlayerOnlineOffline) ConsoleOutputter(name, " 离开了服务器.");
-            if(!name.StartsWith("bot_")) playerDatas[name].IsOnline = false;
+            if (!name.StartsWith("bot_")) playerDatas[name].IsOnline = false;
             return true;
         }
     }

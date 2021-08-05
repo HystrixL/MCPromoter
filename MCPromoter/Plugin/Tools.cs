@@ -12,47 +12,47 @@ namespace MCPromoter
     static class Tools
     {
         public static string FormatSize(long size)
+        {
+            double d = (double) size;
+            int i = 0;
+            while ((d > 1024) && (i < 5))
+            {
+                d /= 1024;
+                i++;
+            }
+
+            string[] unit = {"B", "KB", "MB", "GB", "TB"};
+            return (string.Format("{0} {1}", Math.Round(d, 2), unit[i]));
+        }
+
+
+        public static long GetWorldSize(String path)
+        {
+            DirectoryInfo directoryInfo = new DirectoryInfo(path);
+            long length = 0;
+            foreach (FileSystemInfo fsi in directoryInfo.GetFileSystemInfos())
+            {
+                if (fsi is FileInfo)
                 {
-                    double d = (double) size;
-                    int i = 0;
-                    while ((d > 1024) && (i < 5))
-                    {
-                        d /= 1024;
-                        i++;
-                    }
-        
-                    string[] unit = {"B", "KB", "MB", "GB", "TB"};
-                    return (string.Format("{0} {1}", Math.Round(d, 2), unit[i]));
+                    length += ((FileInfo) fsi).Length;
                 }
-        
-        
-                public static long GetWorldSize(String path)
+                else
                 {
-                    DirectoryInfo directoryInfo = new DirectoryInfo(path);
-                    long length = 0;
-                    foreach (FileSystemInfo fsi in directoryInfo.GetFileSystemInfos())
-                    {
-                        if (fsi is FileInfo)
-                        {
-                            length += ((FileInfo) fsi).Length;
-                        }
-                        else
-                        {
-                            length += GetWorldSize(fsi.FullName);
-                        }
-                    }
-        
-                    return length;
+                    length += GetWorldSize(fsi.FullName);
                 }
+            }
+
+            return length;
+        }
     }
 
-    
 
     class SystemInfo
     {
         [DllImport("kernel32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool GlobalMemoryStatusEx(ref MEMORY_INFO mi);
+
         PerformanceCounter cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
 
         [StructLayout(LayoutKind.Sequential)]
@@ -72,7 +72,7 @@ namespace MCPromoter
         MEMORY_INFO GetMemoryStatus()
         {
             MEMORY_INFO mi = new MEMORY_INFO();
-            mi.dwLength = (uint)Marshal.SizeOf(mi);
+            mi.dwLength = (uint) Marshal.SizeOf(mi);
             GlobalMemoryStatusEx(ref mi);
             return mi;
         }
@@ -97,7 +97,7 @@ namespace MCPromoter
 
         public string GetMemoryUsage()
         {
-            return ((float)GetUsedPhys() / GetTotalPhys()).ToString("P2");
+            return ((float) GetUsedPhys() / GetTotalPhys()).ToString("P2");
         }
 
         public string GetCpuUsage()
@@ -134,5 +134,4 @@ namespace MCPromoter
             return temp.ToString();
         }
     }
-
 }

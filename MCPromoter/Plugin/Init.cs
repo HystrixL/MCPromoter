@@ -41,7 +41,7 @@ namespace MCPromoter
                             {
                                 slot = i.ToString();
                             }
-        
+                            
                             qbIniFile.IniWriteValue(slot, "WorldName", "null");
                             qbIniFile.IniWriteValue(slot, "BackupTime", "null");
                             qbIniFile.IniWriteValue(slot, "Comment", "null");
@@ -59,14 +59,14 @@ namespace MCPromoter
                     LogsWriter("MCP", $@"已完成插件配置文件的初始化.配置文件位于{PluginPath.ConfigPath} .请完成配置文件后重启服务器.");
                 }
         
-                public static void LoadPlugin(bool firstLoad = false)
+                public static void LoadPlugin(bool isFirstLoad = false)
                 {
                     if (!File.Exists(PluginPath.ConfigPath)) InitializePlugin();
                     string configText = File.ReadAllText(PluginPath.ConfigPath);
                     config = new DeserializerBuilder().WithNamingConvention(UnderscoredNamingConvention.Instance).Build()
                         .Deserialize<Config>(configText);
                     
-                    if (firstLoad)
+                    if (isFirstLoad)
                     {
                         string savedPlayerDatas = File.ReadAllText(PluginPath.PlayerDatasPath);
                         if (!string.IsNullOrWhiteSpace(savedPlayerDatas))

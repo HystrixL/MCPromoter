@@ -92,6 +92,8 @@
     <Compile Include="Datas\HelpResources.cs" />
     <Compile Include="Player\AntiCheat.cs" />
     <Compile Include="Player\Command.cs" />
+    <Compile Include="Player\CommandLibrary.cs" />
+    <Compile Include="Player\CommandManager.cs" />
     <Compile Include="Player\Interactive.cs" />
     <Compile Include="Player\SplashDamage.cs" />
     <Compile Include="Player\Status.cs" />

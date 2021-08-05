@@ -14,56 +14,57 @@ namespace MCPromoter
     partial class MCPromoter
     {
         public static bool InputTextPlugin(Events x)
-         {
-                var e = BaseEvent.getFrom(x) as InputTextEvent;
-                if (e == null) return true;
-                string name = e.playername;
-                string xuid = playerDatas[name].Xuid;
-                string msg = e.msg;
-                var position = (x: ((int) e.XYZ.x).ToString(), y: ((int) e.XYZ.y).ToString(),
-                    z: ((int) e.XYZ.z).ToString(), world: e.dimension);
-                CsPlayer csPlayer = new CsPlayer(_mapi, e.playerPtr);
+        {
+            var e = BaseEvent.getFrom(x) as InputTextEvent;
+            if (e == null) return true;
+            string name = e.playername;
+            string xuid = playerDatas[name].Xuid;
+            string msg = e.msg;
+            CsPlayer csPlayer = new CsPlayer(_mapi, e.playerPtr);
 
-                if (msg.StartsWith(config.CmdPrefix))
+            if (msg.StartsWith(config.CmdPrefix))
+            {
+                string[] argsList = msg.Split(' ');
+                argsList[0] = argsList[0].Replace(config.CmdPrefix, "");
+
+                foreach (var disableCommand in config.PluginDisable.Commands)
                 {
-                    string[] argsList = msg.Split(' ');
-                    argsList[0] = argsList[0].Replace(config.CmdPrefix, "");
-
-                    foreach (var disableCommand in config.PluginDisable.Commands)
+                    if (msg.Replace(config.CmdPrefix, "").StartsWith(disableCommand))
                     {
-                        if (msg.Replace(config.CmdPrefix, "").StartsWith(disableCommand))
-                        {
-                            StandardizedFeedback("@a", $"{msg}已被通过配置文件禁用,当前无法使用.详情请咨询Hil.");
-                            return true;
-                        }
+                        StandardizedFeedback("@a", $"{msg}已被通过配置文件禁用,当前无法使用.详情请咨询Hil.");
+                        return true;
                     }
+                }
 
-                    if (config.PluginAdmin.Enable)
+                if (config.PluginAdmin.Enable)
+                {
+                    bool isAdminCmd = false;
+                    bool isLegal = false;
+                    foreach (var adminCmd in config.PluginAdmin.AdminCmd)
                     {
-                        bool isAdminCmd = false;
-                        bool isLegal = false;
-                        foreach (var adminCmd in config.PluginAdmin.AdminCmd)
+                        if (msg.Replace(config.CmdPrefix, "").StartsWith(adminCmd))
                         {
-                            if (msg.Replace(config.CmdPrefix, "").StartsWith(adminCmd))
+                            isAdminCmd = true;
+                            foreach (var player in config.PluginAdmin.AdminList)
                             {
-                                isAdminCmd = true;
-                                foreach (var player in config.PluginAdmin.AdminList)
-                                {
-                                    if (player.Name == name && player.Xuid == xuid) isLegal = true;
-                                }
+                                if (player.Name == name && player.Xuid == xuid) isLegal = true;
                             }
                         }
-
-                        if (isAdminCmd && !isLegal)
-                        {
-                            StandardizedFeedback(name, $"{msg}需要admin权限才可使用，您当前无权使用该指令。");
-                            return true;
-                        }
                     }
 
-                    if (config.Logging.Plugin) LogsWriter(name, msg);
-                    if (config.ConsoleOutput.Plugin) ConsoleOutputter(name, msg);
+                    if (isAdminCmd && !isLegal)
+                    {
+                        StandardizedFeedback(name, $"{msg}需要admin权限才可使用，您当前无权使用该指令。");
+                        return true;
+                    }
+                }
 
+                if (config.Logging.Plugin) LogsWriter(name, msg);
+                if (config.ConsoleOutput.Plugin) ConsoleOutputter(name, msg);
+
+                argsList[0] = argsList[0].ToLower();
+                try
+                {
                     switch (argsList[0])
                     {
                         case "mcp":
@@ -221,12 +222,7 @@ namespace MCPromoter
                                 string newYaml = new Serializer().Serialize(config);
                                 File.WriteAllText(PluginPath.ConfigPath, newYaml);
                             }
-                            else
-                            {
-                                StandardizedFeedback(name,
-                                    $"无效的{config.CmdPrefix}mcp指令，请使用{config.CmdPrefix}mcp status获取帮助");
-                            }
-
+                            
                             break;
                         case "calc":
                             string expression = argsList[1];
@@ -247,7 +243,7 @@ namespace MCPromoter
                                 int itemNumber = 0;
                                 if (expression.Contains("h") && expression.Contains("z") && expression.Contains("g"))
                                 {
-                                    string[] originalNumber = expression.Split(new char[] {'h', 'z', 'g'});
+                                    string[] originalNumber = expression.Split(new char[] { 'h', 'z', 'g' });
                                     boxNumber = int.Parse(originalNumber[0]);
                                     stackNumber = int.Parse(originalNumber[1]);
                                     itemNumber = int.Parse(originalNumber[2]);
@@ -255,34 +251,34 @@ namespace MCPromoter
                                 else if (expression.Contains("h") && expression.Contains("z") &&
                                          !expression.Contains("g"))
                                 {
-                                    string[] originalNumber = expression.Split(new char[] {'h', 'z'});
+                                    string[] originalNumber = expression.Split(new char[] { 'h', 'z' });
                                     boxNumber = int.Parse(originalNumber[0]);
                                     stackNumber = int.Parse(originalNumber[1]);
                                 }
                                 else if (expression.Contains("h") && !expression.Contains("z") &&
                                          expression.Contains("g"))
                                 {
-                                    string[] originalNumber = expression.Split(new char[] {'h', 'g'});
+                                    string[] originalNumber = expression.Split(new char[] { 'h', 'g' });
                                     boxNumber = int.Parse(originalNumber[0]);
                                     itemNumber = int.Parse(originalNumber[1]);
                                 }
                                 else if (!expression.Contains("h") && expression.Contains("z") &&
                                          expression.Contains("g"))
                                 {
-                                    string[] originalNumber = expression.Split(new char[] {'z', 'g'});
+                                    string[] originalNumber = expression.Split(new char[] { 'z', 'g' });
                                     stackNumber = int.Parse(originalNumber[0]);
                                     itemNumber = int.Parse(originalNumber[1]);
                                 }
                                 else if (expression.Contains("h") && !expression.Contains("z") &&
                                          !expression.Contains("g"))
                                 {
-                                    string[] originalNumber = expression.Split(new char[] {'h'});
+                                    string[] originalNumber = expression.Split(new char[] { 'h' });
                                     boxNumber = int.Parse(originalNumber[0]);
                                 }
                                 else if (!expression.Contains("h") && expression.Contains("z") &&
                                          !expression.Contains("g"))
                                 {
-                                    string[] originalNumber = expression.Split(new char[] {'z'});
+                                    string[] originalNumber = expression.Split(new char[] { 'z' });
                                     stackNumber = int.Parse(originalNumber[0]);
                                 }
 
@@ -300,20 +296,20 @@ namespace MCPromoter
                         case "here":
                             _mapi.runcmd("playsound random.levelup @a");
                             StandardizedFeedback("@a",
-                                $"§e§l{name}§r在{position.world}§e§l[{position.x},{position.y},{position.z}]§r向大家打招呼！");
+                                $"§e§l{name}§r在{e.dimension}§e§l[{e.XYZ.x},{e.XYZ.y},{e.XYZ.z}]§r向大家打招呼！");
                             break;
                         case "back":
                             if (playerDatas[name].DeadEnable)
                             {
-                                if (playerDatas[name].DeadWorld == position.world)
+                                if (playerDatas[name].DeadWorld == e.dimension)
                                 {
                                     _mapi.runcmd(
-                                        $"tp {name} {playerDatas[name].DeadX} {playerDatas[name].DeadY} {playerDatas[name].DeadZ} ");
+                                        $"tp {name} {playerDatas[name].DeadPos.x} {playerDatas[name].DeadPos.y} {playerDatas[name].DeadPos.z}");
                                 }
                                 else
                                 {
                                     StandardizedFeedback(name,
-                                        $"你的死亡点在{playerDatas[name].DeadWorld}，但是你现在在{position.world}。暂不支持跨世界传送。");
+                                        $"您的死亡点在{playerDatas[name].DeadWorld}，但是您现在在{e.dimension}。暂不支持跨世界传送。");
                                 }
                             }
                             else
@@ -328,29 +324,32 @@ namespace MCPromoter
                                 StandardizedFeedback(name, "假人已被管理员禁用,当前无法使用.");
                                 return true;
                             }
-                            
+
                             if (argsList[1] == "list")
                             {
                                 webSocket.Send("{\"type\": \"list\"}");
                             }
                             else
                             {
-                                string botName = "bot_"+argsList[2];
+                                string botName = "bot_" + argsList[2];
                                 if (argsList[1] == "add")
                                 {
-                                    webSocket.Send($"{{\"type\": \"add\",\"data\": {{\"name\": \"{botName}\",\"skin\": \"steve\"}}}}");
+                                    webSocket.Send(
+                                        $"{{\"type\": \"add\",\"data\": {{\"name\": \"{botName}\",\"skin\": \"steve\"}}}}");
                                     webSocket.Send($"{{\"type\": \"connect\",\"data\": {{\"name\": \"{botName}\"}}}}");
                                 }
                                 else if (argsList[1] == "remove")
                                 {
-                                    webSocket.Send($"{{\"type\": \"disconnect\", \"data\": {{ \"name\": \"{botName}\" }}}}");
-                                    webSocket.Send($"{{\"type\": \"remove\", \"data\": {{ \"name\": \"{botName}\" }}}}");
+                                    webSocket.Send(
+                                        $"{{\"type\": \"disconnect\", \"data\": {{ \"name\": \"{botName}\" }}}}");
+                                    webSocket.Send(
+                                        $"{{\"type\": \"remove\", \"data\": {{ \"name\": \"{botName}\" }}}}");
                                 }
                                 else if (argsList[1] == "tp")
                                 {
                                     _mapi.runcmd($"tp {name} {botName}");
                                 }
-                                else if (argsList[1]=="call")
+                                else if (argsList[1] == "call")
                                 {
                                     _mapi.runcmd($"tp {botName} {name}");
                                 }
@@ -373,7 +372,7 @@ namespace MCPromoter
                                 DateTime nowDate = DateTime.Now;
                                 DateTime worldStartDate = DateTime.Parse(config.WorldStartDate);
                                 string serverDay =
-                                    ((int) nowDate.Subtract(worldStartDate).TotalDays).ToString();
+                                    ((int)nowDate.Subtract(worldStartDate).TotalDays).ToString();
                                 StandardizedFeedback("@a", $"今天是开服的第{serverDay}天.");
                             }
 
@@ -409,7 +408,8 @@ namespace MCPromoter
                             {
                                 _mapi.runcmd("scoreboard players set @e _CounterCache 1");
                                 _mapi.runcmd("scoreboard players set \"entityCounter\" Counter 0");
-                                _mapi.runcmd("scoreboard players operation \"entityCounter\" Counter+= @e _CounterCache");
+                                _mapi.runcmd(
+                                    "scoreboard players operation \"entityCounter\" Counter+= @e _CounterCache");
                                 Task.Run(async delegate
                                 {
                                     await Task.Delay(1000);
@@ -588,12 +588,12 @@ namespace MCPromoter
                                 string statisName = argsList[1];
                                 Dictionary<string, string> cnStatisName = new Dictionary<string, string>
                                 {
-                                    {"Dig", "挖掘榜"},
-                                    {"Placed", "放置榜"},
-                                    {"Killed", "击杀榜"},
-                                    {"Tasks", "待办事项榜"},
-                                    {"Dead", "死亡榜"},
-                                    {"OnlineMinutes", "在线时长榜(分钟)"}
+                                    { "Dig", "挖掘榜" },
+                                    { "Placed", "放置榜" },
+                                    { "Killed", "击杀榜" },
+                                    { "Tasks", "待办事项榜" },
+                                    { "Dead", "死亡榜" },
+                                    { "OnlineMinutes", "在线时长榜(分钟)" }
                                 };
                                 if (statisName != "null")
                                 {
@@ -673,7 +673,7 @@ namespace MCPromoter
                                 if (playerDatas.ContainsKey(pendingName))
                                 {
                                     config.WhiteList.PlayerList.Add(new Player()
-                                        {Name = pendingName, Xuid = playerDatas[pendingName].Xuid});
+                                        { Name = pendingName, Xuid = playerDatas[pendingName].Xuid });
                                     string newConfig = new Serializer().Serialize(config);
                                     File.WriteAllText(PluginPath.ConfigPath, newConfig);
                                     StandardizedFeedback("@a", $"{name}已将{pendingName}加入白名单。");
@@ -692,7 +692,7 @@ namespace MCPromoter
                                         if (playerDatas.ContainsKey(pendingName))
                                         {
                                             config.WhiteList.PlayerList.Remove(new Player()
-                                                {Name = pendingName, Xuid = playerDatas[pendingName].Xuid});
+                                                { Name = pendingName, Xuid = playerDatas[pendingName].Xuid });
                                             _mapi.runcmd($"kick {pendingName} 您已被{name}永久封禁。");
                                             string newConfig = new Serializer().Serialize(config);
                                             File.WriteAllText(PluginPath.ConfigPath, newConfig);
@@ -733,7 +733,7 @@ namespace MCPromoter
 
                                 if (onlinePlayer.Count <= 1)
                                 {
-                                    StandardizedFeedback(name, "孤单的你，害怕一人在野外入睡，你更渴望温暖的被窝。");
+                                    StandardizedFeedback(name, "孤单的您，害怕一人在野外入睡，您更渴望温暖的被窝。");
                                     return true;
                                 }
 
@@ -759,7 +759,7 @@ namespace MCPromoter
                                             if (quickSleepAcceptPlayer.Count >= onlinePlayer.Count)
                                             {
                                                 StandardizedFeedback("@a",
-                                                    "§5§l深夜，一阵突如其来的反常疲惫侵袭了你的大脑，你失去意识倒在地上。当你醒来时，太阳正从东方冉冉升起。");
+                                                    "§5§l深夜，一阵突如其来的反常疲惫侵袭了您的大脑，您失去意识倒在地上。当您醒来时，太阳正从东方冉冉升起。");
                                                 _mapi.runcmd("time set sunrise");
                                                 _mapi.runcmd("effect @a instant_damage 1 1 true");
                                                 _mapi.runcmd("effect @a blindness 8 1 true");
@@ -783,7 +783,7 @@ namespace MCPromoter
                                     }
                                     else
                                     {
-                                        StandardizedFeedback("@a", "光线突然变得不可抗拒地明亮了起来，刺眼的阳光令你久久无法入睡。");
+                                        StandardizedFeedback("@a", "光线突然变得不可抗拒地明亮了起来，刺眼的阳光令您久久无法入睡。");
                                     }
                                 });
                             }
@@ -804,7 +804,7 @@ namespace MCPromoter
                                 }
                                 else
                                 {
-                                    StandardizedFeedback(name, $"当前暂无快速跳过夜晚的投票，你可通过{config.CmdPrefix}qs进行发起");
+                                    StandardizedFeedback(name, $"当前暂无快速跳过夜晚的投票，您可通过{config.CmdPrefix}qs进行发起");
                                 }
                             }
                             else if (argsList[1] == "refuse")
@@ -820,7 +820,7 @@ namespace MCPromoter
                                 }
                                 else
                                 {
-                                    StandardizedFeedback(name, $"当前暂无快速跳过夜晚的投票，你可通过{config.CmdPrefix}qs进行发起");
+                                    StandardizedFeedback(name, $"当前暂无快速跳过夜晚的投票，您可通过{config.CmdPrefix}qs进行发起");
                                 }
                             }
 
@@ -924,13 +924,18 @@ namespace MCPromoter
                             break;
                     }
                 }
-                else
+                catch(IndexOutOfRangeException)
                 {
-                    if (config.Logging.Chat) LogsWriter(name, msg);
-                    if (config.ConsoleOutput.Chat) ConsoleOutputter(name, msg);
+                    StandardizedFeedback(name,$"无效的MCP指令，请输入{config.CmdPrefix}mcp help获取帮助");
                 }
-
-                return true;
             }
+            else
+            {
+                if (config.Logging.Chat) LogsWriter(name, msg);
+                if (config.ConsoleOutput.Chat) ConsoleOutputter(name, msg);
+            }
+
+            return true;
+        }
     }
 }

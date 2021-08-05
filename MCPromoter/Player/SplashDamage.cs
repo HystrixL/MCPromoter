@@ -27,7 +27,7 @@ namespace MCPromoter
 
                 var e = BaseEvent.getFrom(x) as AttackEvent;
                 if (e == null) return true;
-
+                
                 if (!e.isstand) return true;
                 CsPlayer csPlayer = new CsPlayer(_mapi, e.playerPtr);
                 CsActor csActor = new CsActor(_mapi, e.attackedentityPtr);
