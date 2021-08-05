@@ -8,8 +8,9 @@ namespace MCPromoter
     {
         public static void Init(MCCSAPI api)
         {
-            _mapi = api;
+            Api = api;
             LoadPlugin(true);
+            CommandInitialization();
 
             api.addAfterActListener(EventKey.onInputText, InputTextPlugin);
             api.addAfterActListener(EventKey.onAttack, AttackPlugin);

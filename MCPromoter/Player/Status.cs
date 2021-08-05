@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using CSR;
+using static MCPromoter.Output;
 
 namespace MCPromoter
 {
@@ -18,7 +19,7 @@ namespace MCPromoter
             if (name.StartsWith("bot_"))
             {
                 isAllowLogin = true;
-                _mapi.runcmd($"tag {name} add BOT");
+                Api.runcmd($"tag {name} add BOT");
             }
             else
             {
@@ -32,11 +33,11 @@ namespace MCPromoter
                 else
                 {
                     playerDatas.Add(name, new PlayerDatas {Name = name, Uuid = uuid, Xuid = xuid, IsOnline = true});
-                    if (config.Logging.Plugin) LogsWriter("MCP", $"新实例化用于存储{name}信息的PlayerDatas类");
-                    if (config.ConsoleOutput.Plugin) ConsoleOutputter("MCP", $"新实例化用于存储{name}信息的PlayerDatas类");
+                    if (Configs.Logging.Plugin) LogsWriter("MCP", $"新实例化用于存储{name}信息的PlayerDatas类");
+                    if (Configs.ConsoleOutput.Plugin) ConsoleOutputter("MCP", $"新实例化用于存储{name}信息的PlayerDatas类");
                 }
 
-                if (!config.PluginDisable.Futures.OfflineMessage)
+                if (!Configs.PluginDisable.Futures.OfflineMessage)
                 {
                     Task.Run(async delegate
                     {
@@ -50,25 +51,25 @@ namespace MCPromoter
                 }
             }
 
-            foreach (var player in config.WhiteList.PlayerList)
+            foreach (var player in Configs.WhiteList.PlayerList)
             {
                 if (player.Name == name && player.Xuid == xuid)
                 {
                     isAllowLogin = true;
                 }
             }
-            if (!config.WhiteList.Enable) isAllowLogin = true;
+            if (!Configs.WhiteList.Enable) isAllowLogin = true;
 
             if (!isAllowLogin)
             {
                 Task.Run(async delegate
                 {
                     await Task.Delay(1000);
-                    if (config.Logging.PlayerOnlineOffline) LogsWriter(name, " 尝试加入服务器.");
-                    if (config.ConsoleOutput.PlayerOnlineOffline) ConsoleOutputter(name, " 尝试加入服务器.");
-                    _mapi.runcmd($"kick {name} 您未受邀加入该服务器，详情请咨询Hil。");
-                    if (config.ConsoleOutput.Plugin) ConsoleOutputter("MCP", $"{name}未受邀加入该服务器，已自动踢出。");
-                    if (config.Logging.Plugin) LogsWriter("MCP", $"{name}未受邀加入该服务器，已自动踢出。");
+                    if (Configs.Logging.PlayerOnlineOffline) LogsWriter(name, " 尝试加入服务器.");
+                    if (Configs.ConsoleOutput.PlayerOnlineOffline) ConsoleOutputter(name, " 尝试加入服务器.");
+                    Api.runcmd($"kick {name} 您未受邀加入该服务器，详情请咨询Hil。");
+                    if (Configs.ConsoleOutput.Plugin) ConsoleOutputter("MCP", $"{name}未受邀加入该服务器，已自动踢出。");
+                    if (Configs.Logging.Plugin) LogsWriter("MCP", $"{name}未受邀加入该服务器，已自动踢出。");
                 });
             }
             return true;
@@ -80,8 +81,8 @@ namespace MCPromoter
             if (e == null) return true;
 
             string name = e.playername;
-            if (config.Logging.PlayerOnlineOffline) LogsWriter(name, " 离开了服务器.");
-            if (config.ConsoleOutput.PlayerOnlineOffline) ConsoleOutputter(name, " 离开了服务器.");
+            if (Configs.Logging.PlayerOnlineOffline) LogsWriter(name, " 离开了服务器.");
+            if (Configs.ConsoleOutput.PlayerOnlineOffline) ConsoleOutputter(name, " 离开了服务器.");
             if (!name.StartsWith("bot_")) playerDatas[name].IsOnline = false;
             return true;
         }

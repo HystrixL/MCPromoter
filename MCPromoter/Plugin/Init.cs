@@ -4,6 +4,7 @@ using System.Timers;
 using WebSocketSharp;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using static MCPromoter.Output;
 
 namespace MCPromoter
 {
@@ -63,7 +64,7 @@ namespace MCPromoter
                 {
                     if (!File.Exists(PluginPath.ConfigPath)) InitializePlugin();
                     string configText = File.ReadAllText(PluginPath.ConfigPath);
-                    config = new DeserializerBuilder().WithNamingConvention(UnderscoredNamingConvention.Instance).Build()
+                    Configs = new DeserializerBuilder().WithNamingConvention(UnderscoredNamingConvention.Instance).Build()
                         .Deserialize<Config>(configText);
                     
                     if (isFirstLoad)
@@ -79,24 +80,24 @@ namespace MCPromoter
                         LogsWriter("MCP", "快速备份QuickBackup核心组件丢失，@qb无法使用");
                         ConsoleOutputter("MCP", $@"请将QuickBackup.exe放入{PluginPath.QbRootPath}以启用QuickBackup");
                         LogsWriter("MCP", $@"请将QuickBackup.exe放入{PluginPath.QbRootPath}以启用QuickBackup");
-                        config.PluginDisable.Futures.QuickBackup = true;
+                        Configs.PluginDisable.Futures.QuickBackup = true;
                     }
         
-                    if (config.WorldName.Contains(" "))
+                    if (Configs.WorldName.Contains(" "))
                     {
                         ConsoleOutputter("MCP", "存档名包含空格,QuickBackup无法工作!请进行修改.");
                         LogsWriter("MCP", "存档名包含空格,QuickBackup无法工作!请进行修改.");
-                        config.PluginDisable.Futures.QuickBackup = true;
+                        Configs.PluginDisable.Futures.QuickBackup = true;
                     }
         
-                    if (!Directory.Exists($@"worlds\{config.WorldName}"))
+                    if (!Directory.Exists($@"worlds\{Configs.WorldName}"))
                     {
                         ConsoleOutputter("MCP", "找不到指定存档,QuickBackup无法工作!请检查配置文件.");
                         LogsWriter("MCP", "找不到指定存档,QuickBackup无法工作!请检查配置文件.");
-                        config.PluginDisable.Futures.QuickBackup = true;
+                        Configs.PluginDisable.Futures.QuickBackup = true;
                     }
         
-                    if (config.PluginDisable.Futures.Statistics.OnlineMinutes)
+                    if (Configs.PluginDisable.Futures.Statistics.OnlineMinutes)
                     {
                         if (onlineMinutesAccTimer != null)
                         {
@@ -111,7 +112,7 @@ namespace MCPromoter
                         onlineMinutesAccTimer.Start();
                     }
         
-                    if (!config.AntiCheat.Enable || !config.AntiCheat.ForceGamemode)
+                    if (!Configs.AntiCheat.Enable || !Configs.AntiCheat.ForceGamemode)
                     {
                         if (forceGamemodeTimer != null)
                         {
@@ -126,7 +127,7 @@ namespace MCPromoter
                         forceGamemodeTimer.Start();
                     }
         
-                    if (config.PluginDisable.Futures.AutoBackup || config.PluginDisable.Futures.QuickBackup)
+                    if (Configs.PluginDisable.Futures.AutoBackup || Configs.PluginDisable.Futures.QuickBackup)
                     {
                         if (autoBackupTimer != null)
                         {
@@ -141,36 +142,36 @@ namespace MCPromoter
                         autoBackupTimer.Start();
                     }
         
-                    switch (config.PluginLoader.Type)
+                    switch (Configs.PluginLoader.Type)
                     {
                         case "DTConsole":
-                            config.PluginLoader.CustomizationPath = @"..\MCModDllExe\debug.bat";
+                            Configs.PluginLoader.CustomizationPath = @"..\MCModDllExe\debug.bat";
                             break;
                         case "LiteLoader":
                         case "BedrockX":
                         case "BDXCore":
-                            config.PluginLoader.CustomizationPath = @"bedrock_server.exe";
+                            Configs.PluginLoader.CustomizationPath = @"bedrock_server.exe";
                             break;
                         case "ElementZero":
-                            config.PluginLoader.CustomizationPath = @"bedrock_server_mod.exe";
+                            Configs.PluginLoader.CustomizationPath = @"bedrock_server_mod.exe";
                             break;
                         default:
-                            config.PluginLoader.CustomizationPath = config.PluginLoader.CustomizationPath;
+                            Configs.PluginLoader.CustomizationPath = Configs.PluginLoader.CustomizationPath;
                             break;
                     }
         
-                    if (!File.Exists(config.PluginLoader.CustomizationPath))
+                    if (!File.Exists(Configs.PluginLoader.CustomizationPath))
                     {
                         ConsoleOutputter("MCP", "找不到指定的插件加载器,QuickBackup无法重启服务器!请检查配置文件.");
                         LogsWriter("MCP", "找不到指定的插件加载器,QuickBackup无法重启服务器!请检查配置文件.");
                     }
         
                     bool webSocketStatus;
-                    if (!config.PluginDisable.Futures.FakePlayer)
+                    if (!Configs.PluginDisable.Futures.FakePlayer)
                     {
                         try
                         {
-                            webSocket = new WebSocket($@"ws://{config.FakePlayer.Address}:{config.FakePlayer.Port}");
+                            webSocket = new WebSocket($@"ws://{Configs.FakePlayer.Address}:{Configs.FakePlayer.Port}");
                             webSocket.OnMessage += BotListener;
                             webSocket.Connect();
                         }
@@ -178,7 +179,7 @@ namespace MCPromoter
                         {
                             ConsoleOutputter("MCP","无法连接至FakePlayer的WebSocket服务器,请检查设置.");
                             LogsWriter("MCP","无法连接至FakePlayer的WebSocket服务器,请检查设置.");
-                            config.PluginDisable.Futures.FakePlayer = true;
+                            Configs.PluginDisable.Futures.FakePlayer = true;
                         }
                     }
         

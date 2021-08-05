@@ -1,4 +1,5 @@
 ﻿using WebSocketSharp;
+using static MCPromoter.Output;
 
 namespace MCPromoter
 {

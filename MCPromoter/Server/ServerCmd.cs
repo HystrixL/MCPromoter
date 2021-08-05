@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Text.RegularExpressions;
 using CSR;
+using static MCPromoter.Output;
 
 namespace MCPromoter
 {
@@ -16,8 +17,8 @@ namespace MCPromoter
             if (cmd == "mcp setting reload")
             {
                 LoadPlugin();
-                if (config.Logging.Plugin) LogsWriter("MCP", "配置文件已重新载入。");
-                if (config.ConsoleOutput.Plugin) ConsoleOutputter("MCP", "配置文件已重新载入。");
+                if (Configs.Logging.Plugin) LogsWriter("MCP", "配置文件已重新载入。");
+                if (Configs.ConsoleOutput.Plugin) ConsoleOutputter("MCP", "配置文件已重新载入。");
                 return false;
             }
 
@@ -28,7 +29,7 @@ namespace MCPromoter
                     if (playerData.Value.IsOnline)
                     {
                         playerDatas[playerData.Key].IsOnline = false;
-                        _mapi.runcmd($"kick {playerData.Value.Name}");
+                        Api.runcmd($"kick {playerData.Value.Name}");
                     }
                 }
 

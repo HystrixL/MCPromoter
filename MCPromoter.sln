@@ -15,6 +15,24 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		StartTest.bat = StartTest.bat
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MCPromoter.Test", "MCPromoter.Test\MCPromoter.Test.csproj", "{37AA60E6-3300-4F64-86F9-BB0C458779D0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BDS.Test", "BDS.Test", "{F639C62C-36FC-4466-949E-C541915D173A}"
+ProjectSection(SolutionItems) = preProject
+	BDS.Test\Component.cs = BDS.Test\Component.cs
+	BDS.Test\Events.cs = BDS.Test\Events.cs
+	BDS.Test\MCCSAPI.cs = BDS.Test\MCCSAPI.cs
+	BDS.Test\Plugin.cs = BDS.Test\Plugin.cs
+EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BDS", "BDS", "{F85A51C3-A929-4510-8347-545B27E4BDC1}"
+ProjectSection(SolutionItems) = preProject
+	BDS\Component.cs = BDS\Component.cs
+	BDS\Events.cs = BDS\Events.cs
+	BDS\MCCSAPI.cs = BDS\MCCSAPI.cs
+	BDS\Plugin.cs = BDS\Plugin.cs
+EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -49,11 +67,27 @@ Global
 		{356053D7-5E72-4FAD-A06F-59937084B9EE}.Release|x64.Build.0 = Release|x64
 		{356053D7-5E72-4FAD-A06F-59937084B9EE}.Release|x86.ActiveCfg = Release|x86
 		{356053D7-5E72-4FAD-A06F-59937084B9EE}.Release|x86.Build.0 = Release|x86
+		{37AA60E6-3300-4F64-86F9-BB0C458779D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37AA60E6-3300-4F64-86F9-BB0C458779D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37AA60E6-3300-4F64-86F9-BB0C458779D0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{37AA60E6-3300-4F64-86F9-BB0C458779D0}.Debug|x64.Build.0 = Debug|Any CPU
+		{37AA60E6-3300-4F64-86F9-BB0C458779D0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{37AA60E6-3300-4F64-86F9-BB0C458779D0}.Debug|x86.Build.0 = Debug|Any CPU
+		{37AA60E6-3300-4F64-86F9-BB0C458779D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37AA60E6-3300-4F64-86F9-BB0C458779D0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37AA60E6-3300-4F64-86F9-BB0C458779D0}.Release|x64.ActiveCfg = Release|Any CPU
+		{37AA60E6-3300-4F64-86F9-BB0C458779D0}.Release|x64.Build.0 = Release|Any CPU
+		{37AA60E6-3300-4F64-86F9-BB0C458779D0}.Release|x86.ActiveCfg = Release|Any CPU
+		{37AA60E6-3300-4F64-86F9-BB0C458779D0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {635D9D88-2CFC-4B07-9603-B7667E7C18BB}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F639C62C-36FC-4466-949E-C541915D173A} = {CA7F2A91-16C3-4909-B6C5-1ABD0D901AD1}
+		{F85A51C3-A929-4510-8347-545B27E4BDC1} = {CA7F2A91-16C3-4909-B6C5-1ABD0D901AD1}
 	EndGlobalSection
 EndGlobal

@@ -23,14 +23,14 @@ namespace MCPromoter
 
         public static bool AttackPlugin(Events x)
         {
-            if (config.PluginDisable.Futures.SplashDamage) return true;
+            if (Configs.PluginDisable.Futures.SplashDamage) return true;
 
                 var e = BaseEvent.getFrom(x) as AttackEvent;
                 if (e == null) return true;
                 
                 if (!e.isstand) return true;
-                CsPlayer csPlayer = new CsPlayer(_mapi, e.playerPtr);
-                CsActor csActor = new CsActor(_mapi, e.attackedentityPtr);
+                CsPlayer csPlayer = new CsPlayer(Api, e.playerPtr);
+                CsActor csActor = new CsActor(Api, e.attackedentityPtr);
                 var hand = javaScriptSerializer.Deserialize<ArrayList>(csPlayer.HandContainer);
                 if (hand != null && hand.Count > 0)
                 {
@@ -47,7 +47,7 @@ namespace MCPromoter
                                 //开始执行溅射伤害操作
                                 var pdata = csActor.Position;
                                 var aXYZ = javaScriptSerializer.Deserialize<Vec3>(csActor.Position);
-                                var list = CsActor.getsFromAABB(_mapi, csActor.DimensionId, aXYZ.x - 2, aXYZ.y - 1,
+                                var list = CsActor.getsFromAABB(Api, csActor.DimensionId, aXYZ.x - 2, aXYZ.y - 1,
                                     aXYZ.z - 2,
                                     aXYZ.x + 2, aXYZ.y + 1, aXYZ.z + 2);
                                 if (list != null && list.Count > 0)
@@ -57,7 +57,7 @@ namespace MCPromoter
                                     {
                                         if (aptr != e.attackedentityPtr)
                                         {
-                                            CsActor spa = new CsActor(_mapi, aptr);
+                                            CsActor spa = new CsActor(Api, aptr);
                                             if (((spa.TypeId & 0x100) == 0x100))
                                             {
                                                 spa.hurt(e.playerPtr, ActorDamageCause.EntityAttack, 1, true, false);
@@ -65,7 +65,7 @@ namespace MCPromoter
                                             }
                                         }
 
-                                        if (count >= config.MaxDamageSplash)
+                                        if (count >= Configs.MaxDamageSplash)
                                         {
                                             break;
                                         }

@@ -2,7 +2,7 @@
 
 namespace MCPromoter
 {
-    public delegate void Command(string[] args,InputTextEvent e,MCCSAPI api);
+    public delegate bool Command(string[] args,InputTextEvent e,MCCSAPI api);
     
     public static class CommandManager
     {
@@ -11,9 +11,9 @@ namespace MCPromoter
             MCPromoter.Commands.Add(keyWord,command);
         }
         
-        public static void addCommandHelp(string keyWord,string[] helpContent)
+        public static void addCommandHelp(string keyWord,string helpContent)
         {
-            MCPromoter.CommandHelps.Add(keyWord,helpContent);
+            HelpResources.Command.Add(keyWord,helpContent);
         }
     }
 }

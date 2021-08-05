@@ -1,4 +1,5 @@
 ﻿using CSR;
+using static MCPromoter.Output;
 
 namespace MCPromoter
 {
@@ -13,17 +14,17 @@ namespace MCPromoter
             string attackType = e.srctype;
             string deadName = e.mobname;
             string deadType = e.mobtype;
-            if (!config.PluginDisable.Futures.Statistics.Killed)
+            if (!Configs.PluginDisable.Futures.Statistics.Killed)
             {
                 if (attackType == "entity.player.name")
                 {
-                    _mapi.runcmd($"scoreboard players add @a[name={attackName},tag=!BOT] Killed 1");
+                    Api.runcmd($"scoreboard players add @a[name={attackName},tag=!BOT] Killed 1");
                 }
             }
 
             if (deadType == "entity.player.name")
             {
-                if (!config.PluginDisable.Futures.DeathPointReport)
+                if (!Configs.PluginDisable.Futures.DeathPointReport)
                 {
                     StandardizedFeedback("@a",
                         $"§r§l§f{deadName}§r§o§4 死于 §r§l§f{e.dimension}[{(int)e.XYZ.x},{(int)e.XYZ.y},{(int)e.XYZ.z}]");
@@ -40,9 +41,9 @@ namespace MCPromoter
                 }
                 else
                 {
-                    if (!config.PluginDisable.Futures.Statistics.Death)
+                    if (!Configs.PluginDisable.Futures.Statistics.Death)
                     {
-                        _mapi.runcmd($"scoreboard players add @a[tag=!BOT,name={deadName}] Dead 1");
+                        Api.runcmd($"scoreboard players add @a[tag=!BOT,name={deadName}] Dead 1");
                     }
                 }
             }
@@ -52,14 +53,14 @@ namespace MCPromoter
 
         public static bool DestroyBlockPlugin(Events x)
         {
-            if (config.PluginDisable.Futures.Statistics.Excavation) return true;
+            if (Configs.PluginDisable.Futures.Statistics.Excavation) return true;
             var e = BaseEvent.getFrom(x) as DestroyBlockEvent;
             if (e == null) return true;
 
             string name = e.playername;
             if (!string.IsNullOrEmpty(name))
             {
-                _mapi.runcmd($"scoreboard players add @a[name={name},tag=!BOT] Dig 1");
+                Api.runcmd($"scoreboard players add @a[name={name},tag=!BOT] Dig 1");
             }
 
             return true;
@@ -67,14 +68,14 @@ namespace MCPromoter
 
         public static bool PlacedBlockPlugin(Events x)
         {
-            if (config.PluginDisable.Futures.Statistics.Placed) return true;
+            if (Configs.PluginDisable.Futures.Statistics.Placed) return true;
             var e = BaseEvent.getFrom(x) as PlacedBlockEvent;
             if (e == null) return true;
 
             string name = e.playername;
             if (!string.IsNullOrEmpty(name))
             {
-                _mapi.runcmd($"scoreboard players add @a[name={name},tag=!BOT] Placed 1");
+                Api.runcmd($"scoreboard players add @a[name={name},tag=!BOT] Placed 1");
             }
 
             return true;

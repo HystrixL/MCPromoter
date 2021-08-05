@@ -83,10 +83,18 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BDS\Component.cs" />
-    <Compile Include="BDS\Events.cs" />
-    <Compile Include="BDS\MCCSAPI.cs" />
-    <Compile Include="BDS\Plugin.cs" />
+    <Compile Include="..\BDS\Component.cs">
+      <Link>BDS\Component.cs</Link>
+    </Compile>
+    <Compile Include="..\BDS\Events.cs">
+      <Link>BDS\Events.cs</Link>
+    </Compile>
+    <Compile Include="..\BDS\MCCSAPI.cs">
+      <Link>BDS\MCCSAPI.cs</Link>
+    </Compile>
+    <Compile Include="..\BDS\Plugin.cs">
+      <Link>BDS\Plugin.cs</Link>
+    </Compile>
     <Compile Include="Datas\Config.cs" />
     <Compile Include="Datas\Datas.cs" />
     <Compile Include="Datas\HelpResources.cs" />

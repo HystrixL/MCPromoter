@@ -1,4 +1,5 @@
 ﻿using CSR;
+using static MCPromoter.Output;
 
 namespace MCPromoter
 {
@@ -11,11 +12,11 @@ namespace MCPromoter
 
             string name = e.playername;
             string cmd = e.cmd;
-            if (config.Logging.Command) LogsWriter(name, cmd);
-            if (config.ConsoleOutput.Command) ConsoleOutputter(name, cmd);
+            if (Configs.Logging.Command) LogsWriter(name, cmd);
+            if (Configs.ConsoleOutput.Command) ConsoleOutputter(name, cmd);
 
-            if (!config.AntiCheat.Enable) return true;
-            foreach (var allowedCmd in config.AntiCheat.AllowedCmd)
+            if (!Configs.AntiCheat.Enable) return true;
+            foreach (var allowedCmd in Configs.AntiCheat.AllowedCmd)
             {
                 if (cmd.StartsWith(allowedCmd))
                 {
@@ -23,7 +24,7 @@ namespace MCPromoter
                 }
             }
 
-            _mapi.runcmd($"kick {name} 试图违规使用{cmd}被踢出");
+            Api.runcmd($"kick {name} 试图违规使用{cmd}被踢出");
             StandardizedFeedback("@a", $"{name}试图违规使用{cmd}被踢出");
             return false;
         }
