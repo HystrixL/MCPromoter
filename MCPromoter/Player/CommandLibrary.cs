@@ -651,7 +651,7 @@ namespace MCPromoter
                 if (args.Length != 2) return false;
                 IniFile qbIniFile = new IniFile(PluginPath.QbInfoPath);
                 StandardizedFeedback("@a", "§d§l【QuickBackup各槽位信息】");
-                for (int i = 0; i < 6; i++)
+                for (var i = 0; i < 6; i++)
                 {
                     string slot;
                     if (i == 0)
@@ -663,10 +663,10 @@ namespace MCPromoter
                         slot = i.ToString();
                     }
 
-                    string qbWorldName = qbIniFile.IniReadValue(slot, "WorldName");
-                    string qbTime = qbIniFile.IniReadValue(slot, "BackupTime");
-                    string qbComment = qbIniFile.IniReadValue(slot, "Comment");
-                    string qbSize = qbIniFile.IniReadValue(slot, "Size");
+                    var qbWorldName = qbIniFile.IniReadValue(slot, "WorldName");
+                    var qbTime = qbIniFile.IniReadValue(slot, "BackupTime");
+                    var qbComment = qbIniFile.IniReadValue(slot, "Comment");
+                    var qbSize = qbIniFile.IniReadValue(slot, "Size");
 
                     StandardizedFeedback("@a",
                         $"[槽位{slot}]备份存档:§6{qbWorldName}§r  备份时间:§l{qbTime}§r  注释:{qbComment}  大小:{Tools.FormatSize(long.Parse(qbSize))}");
@@ -696,13 +696,9 @@ namespace MCPromoter
                 }
 
                 onlinePlayer.Clear();
-                foreach (var playerData in playerDatas)
-                {
-                    if (playerData.Value.IsOnline == true)
-                    {
-                        onlinePlayer.Add(playerData.Key);
-                    }
-                }
+                playerDatas.Where(playerData => playerData.Value.IsOnline)
+                    .ToList()
+                    .ForEach(playerData => onlinePlayer.Add(playerData.Key));
 
                 if (onlinePlayer.Count <= 1)
                 {
@@ -806,9 +802,9 @@ namespace MCPromoter
         public static bool cmdRc(string[] args, InputTextEvent e, MCCSAPI api)
         {
             if (args.Length == 1) return false;
-            string msg = string.Join(" ", args);
-            string command = msg.Replace($"{Configs.CmdPrefix}rc ", "");
-            bool cmdResult = Api.runcmd(command);
+            var msg = string.Join(" ", args);
+            var command = msg.Replace($"{Configs.CmdPrefix}rc ", "");
+            var cmdResult = Api.runcmd(command);
             StandardizedFeedback("@a", cmdResult ? $"已成功向控制台注入了{command}" : $"{command}运行失败");
 
             return true;
@@ -817,7 +813,7 @@ namespace MCPromoter
         public static bool cmdSize(string[] args, InputTextEvent e, MCCSAPI api)
         {
             if (args.Length != 1) return false;
-            string worldSize = Tools.FormatSize(Tools.GetWorldSize($@"worlds\{Configs.WorldName}"));
+            var worldSize = Tools.FormatSize(Tools.GetWorldSize($@"worlds\{Configs.WorldName}"));
             StandardizedFeedback("@a", $"当前服务器的存档大小是§l§6{worldSize}");
             return true;
         }
@@ -861,8 +857,8 @@ namespace MCPromoter
             else
             {
                 if (args.Length != 2) return false;
-                string statisName = args[1];
-                Dictionary<string, string> cnStatisName = new Dictionary<string, string>
+                var statisName = args[1];
+                var cnStatisName = new Dictionary<string, string>
                 {
                     { "Dig", "挖掘榜" },
                     { "Placed", "放置榜" },
@@ -892,7 +888,7 @@ namespace MCPromoter
         public static bool cmdSystem(string[] args, InputTextEvent e, MCCSAPI api)
         {
             if (args.Length != 2) return false;
-            SystemInfo systemInfo = new SystemInfo();
+            var systemInfo = new SystemInfo();
             if (args[1] == "cpu")
             {
                 string cpuUsage = systemInfo.GetCpuUsage();
@@ -911,7 +907,7 @@ namespace MCPromoter
         public static bool cmdTask(string[] args, InputTextEvent e, MCCSAPI api)
         {
             if (args.Length != 3) return false;
-            string taskName = args[2];
+            var taskName = args[2];
             if (args[1] == "add")
             {
                 Api.runcmd($"scoreboard players set {taskName} Tasks 1");
@@ -930,16 +926,13 @@ namespace MCPromoter
         public static bool cmdTeleport(string[] args, InputTextEvent e, MCCSAPI api)
         {
             if (args.Length != 2) return false;
-            string victim = e.playername;
-            string destination = args[1];
-            List<string> destinationList = new List<string>();
-            foreach (var playerData in playerDatas)
-            {
-                if (playerData.Value.IsOnline && playerData.Value.Name.ToLower().StartsWith(destination.ToLower()))
-                {
-                    destinationList.Add(playerData.Value.Name);
-                }
-            }
+            var victim = e.playername;
+            var destination = args[1];
+            var destinationList = new List<string>();
+
+            playerDatas.Where(p=>p.Value.IsOnline&&p.Value.Name.ToLower().StartsWith(destination.ToLower()))
+                .ToList()
+                .ForEach(p=>destinationList.Add(p.Value.Name));
 
             if (destinationList.Count==1)
             {
@@ -979,17 +972,14 @@ namespace MCPromoter
         public static bool cmdWhiteList(string[] args, InputTextEvent e, MCCSAPI api)
         {
             if (args.Length != 3) return false;
-            string name = e.playername;
-            string pendingName = args[2];
+            var name = e.playername;
+            var pendingName = args[2];
             if (args[1] == "add")
             {
-                foreach (var player in Configs.WhiteList.PlayerList)
+                if (Configs.WhiteList.PlayerList.Any(player => player.Name == pendingName))
                 {
-                    if (player.Name == pendingName)
-                    {
-                        StandardizedFeedback(name, $"白名单中已存在玩家{pendingName}");
-                        return true;
-                    }
+                    StandardizedFeedback(name, $"白名单中已存在玩家{pendingName}");
+                    return true;
                 }
 
                 if (playerDatas.ContainsKey(pendingName))
@@ -1007,26 +997,23 @@ namespace MCPromoter
             }
             else if (args[1] == "remove")
             {
-                foreach (var player in Configs.WhiteList.PlayerList)
+                if (Configs.WhiteList.PlayerList.Any(player => player.Name == pendingName))
                 {
-                    if (player.Name == pendingName)
+                    if (playerDatas.ContainsKey(pendingName))
                     {
-                        if (playerDatas.ContainsKey(pendingName))
-                        {
-                            Configs.WhiteList.PlayerList.Remove(new Player()
-                                { Name = pendingName, Xuid = playerDatas[pendingName].Xuid });
-                            Api.runcmd($"kick {pendingName} 您已被{name}永久封禁。");
-                            string newConfig = new Serializer().Serialize(Configs);
-                            File.WriteAllText(PluginPath.ConfigPath, newConfig);
-                            StandardizedFeedback("@a", $"{pendingName}已被{name}永久封禁。");
-                        }
-                        else
-                        {
-                            StandardizedFeedback(name, $"{pendingName}未曾加入过服务器，请让其加入服务器后再移除白名单");
-                        }
-
-                        return true;
+                        Configs.WhiteList.PlayerList.Remove(new Player()
+                            { Name = pendingName, Xuid = playerDatas[pendingName].Xuid });
+                        Api.runcmd($"kick {pendingName} 您已被{name}永久封禁。");
+                        string newConfig = new Serializer().Serialize(Configs);
+                        File.WriteAllText(PluginPath.ConfigPath, newConfig);
+                        StandardizedFeedback("@a", $"{pendingName}已被{name}永久封禁。");
                     }
+                    else
+                    {
+                        StandardizedFeedback(name, $"{pendingName}未曾加入过服务器，请让其加入服务器后再移除白名单");
+                    }
+
+                    return true;
                 }
 
                 StandardizedFeedback(name, $"白名单中不存在玩家{pendingName}");

@@ -6,26 +6,27 @@ namespace MCPromoter
     partial class MCPromoter
     {
         public static void BotListener(object sender, MessageEventArgs e)
+        {
+            string receive = e.Data;
+            if (receive.Contains("\"type\":\"list\""))
+            {
+                FakePlayerData.List fakePlayerList = javaScriptSerializer.Deserialize<FakePlayerData.List>(receive);
+                string list = string.Join("、", fakePlayerList.data.list);
+                StandardizedFeedback("@a", $"服务器内存在假人 {list}");
+            }
+            else if (receive.Contains("\"type\":\"add\"") || receive.Contains("\"type\":\"remove\"") ||
+                     receive.Contains("\"type\":\"connect\"") || receive.Contains("\"type\":\"disconnect\""))
+            {
+                FakePlayerData.Operation fakePlayerOperation =
+                    javaScriptSerializer.Deserialize<FakePlayerData.Operation>(receive);
+                if (!fakePlayerOperation.data.success)
                 {
-                    string receive = e.Data;
-                    if (receive.Contains("\"type\": \"list\""))
-                    {
-                        FakePlayerData.List fakePlayerList = javaScriptSerializer.Deserialize<FakePlayerData.List>(receive);
-                        string list = string.Join("、", fakePlayerList.data.list);
-                        StandardizedFeedback("@a",$"服务器内存在假人 {list}");
-                    }
-                    else if (receive.Contains("\"type\": \"add\"")||receive.Contains("\"type\": \"remove\"")||receive.Contains("\"type\": \"connect\"")||receive.Contains("\"type\": \"disconnect\""))
-                    {
-                        FakePlayerData.Operation fakePlayerOperation =
-                            javaScriptSerializer.Deserialize<FakePlayerData.Operation>(receive);
-                        if (!fakePlayerOperation.data.success)
-                        {
-                            StandardizedFeedback("@a",$"操作假人{fakePlayerOperation.data.name}失败");
-                        }
-                    }
+                    StandardizedFeedback("@a", $"操作假人{fakePlayerOperation.data.name}失败");
                 }
+            }
+        }
     }
-    
+
     public static class FakePlayerData
     {
         public class List

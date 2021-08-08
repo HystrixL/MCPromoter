@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading.Tasks;
 using CSR;
 using static MCPromoter.Output;
 
@@ -51,13 +52,11 @@ namespace MCPromoter
                 }
             }
 
-            foreach (var player in Configs.WhiteList.PlayerList)
+            if (Configs.WhiteList.PlayerList.Any(player => player.Name == name && player.Xuid == xuid))
             {
-                if (player.Name == name && player.Xuid == xuid)
-                {
-                    isAllowLogin = true;
-                }
+                isAllowLogin = true;
             }
+
             if (!Configs.WhiteList.Enable) isAllowLogin = true;
 
             if (!isAllowLogin)
