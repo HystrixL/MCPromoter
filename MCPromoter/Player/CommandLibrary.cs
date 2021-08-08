@@ -50,6 +50,7 @@ namespace MCPromoter
                 return true;
             }
 
+            if(args.Length<2) return false;
             if (args[1] == "list")
             {
                 if (args.Length > 2) return false;
@@ -215,7 +216,7 @@ namespace MCPromoter
             if (args.Length != 1) return false;
             api.runcmd("playsound random.levelup @a");
             StandardizedFeedback("@a",
-                $"§e§l{e.playername}§r在{e.dimension}§e§l[{e.XYZ.x},{e.XYZ.y},{e.XYZ.z}]§r向大家打招呼！");
+                $"§e§l{e.playername}§r在{e.dimension}§e§l[{(int)e.XYZ.x},{(int)e.XYZ.y},{(int)e.XYZ.z}]§r向大家打招呼！");
             return true;
         }
 
@@ -922,6 +923,33 @@ namespace MCPromoter
                 StandardizedFeedback("@a", $"已将§l{taskName}§r从待办事项板上移除");
             }
             else return false;
+
+            return true;
+        }
+
+        public static bool cmdTeleport(string[] args, InputTextEvent e, MCCSAPI api)
+        {
+            if (args.Length != 2) return false;
+            string victim = e.playername;
+            string destination = args[1];
+            List<string> destinationList = new List<string>();
+            foreach (var playerData in playerDatas)
+            {
+                if (playerData.Value.IsOnline && playerData.Value.Name.ToLower().StartsWith(destination.ToLower()))
+                {
+                    destinationList.Add(playerData.Value.Name);
+                }
+            }
+
+            if (destinationList.Count==1)
+            {
+                api.runcmd($"tp {victim} {destinationList[0]}");
+                StandardizedFeedback("@a",$"已将{victim}传送至{destinationList[0]}.");
+            }
+            else
+            {
+                StandardizedFeedback("@a",$"匹配{destination}的玩家共有{destinationList.Count}名,无法进行精准传送,请修改传送目标.");
+            }
 
             return true;
         }

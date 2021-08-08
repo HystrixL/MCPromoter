@@ -70,7 +70,6 @@ AntiCheat:
     - '/msg'
     - '/tell'
     - '/w'
-    - '/tp'
 
 ### =======
 ### Futures
@@ -236,8 +235,8 @@ ConsoleOutput:
         public bool SuicideMessages { get; set; }//自定义自杀信息
         [YamlMember(Alias = "DeathPointReport", ApplyNamingConventions = false)]
         public bool DeathPointReport { get; set; }//死亡点报告
-        [YamlMember(Alias = "AutoBackup", ApplyNamingConventions = false)]
-        public bool AutoBackup { get; set; }//自动备份
+        [YamlMember(Alias = "AutoBackupServer", ApplyNamingConventions = false)]
+        public bool AutoBackupServer { get; set; }//自动备份
         [YamlMember(Alias = "SplashDamage", ApplyNamingConventions = false)]
         public bool SplashDamage { get; set; }//伤害溅射
         [YamlMember(Alias = "OfflineMessage", ApplyNamingConventions = false)]

@@ -1,13 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Diagnostics;
-using System.IO;
-using System.Net.NetworkInformation;
-using System.Threading.Tasks;
-using System.Timers;
-using YamlDotNet.Serialization;
-using CSR;
+﻿using CSR;
 using static MCPromoter.Output;
 
 namespace MCPromoter
@@ -56,8 +47,7 @@ namespace MCPromoter
             CommandManager.addCommand("size",CommandLibrary.cmdSize);
             CommandManager.addCommandHelp("size","获取存档大小");
             CommandManager.addCommand("sta",CommandLibrary.cmdSta);
-            CommandManager.addCommandHelp("sta <计分板名>","将侧边栏显示调整为特定计分板");
-            CommandManager.addCommandHelp("sta null","关闭侧边栏显示");
+            CommandManager.addCommandHelp("sta <计分板名>","将侧边栏显示调整为特定计分板(null为关闭)");
             CommandManager.addCommandHelp("sta auto [true|false]","开启/关闭计分板自动切换");
             CommandManager.addCommand("system",CommandLibrary.cmdSystem);
             CommandManager.addCommandHelp("system [cpu|memory]","查询服务器CPU/内存占用率");
@@ -65,6 +55,8 @@ namespace MCPromoter
             CommandManager.addCommandHelp("task [add|remove] <任务名>","添加/移除待办");
             CommandManager.addCommand("tick",CommandLibrary.cmdTick);
             CommandManager.addCommandHelp("tick [倍数|status]","设置/查询随机刻倍数");
+            CommandManager.addCommand("tp",CommandLibrary.cmdTeleport);
+            CommandManager.addCommandHelp("tp <玩家名>","将自己传送至目标玩家,目标名可只打开头,会自动匹配(忽略大小写).");
             CommandManager.addCommand("whitelist",CommandLibrary.cmdWhiteList);
             CommandManager.addCommandHelp("whitelist [add|remove] <玩家名>","将玩家加入/移出白名单");
         }
@@ -82,6 +74,7 @@ namespace MCPromoter
             {
                 string[] argsList = msg.Split(' ');
                 argsList[0] = argsList[0].Replace(Configs.CmdPrefix, "");
+                argsList[0] = argsList[0].ToLower();
 
                 if (!Commands.ContainsKey(argsList[0]))
                 {
@@ -123,8 +116,7 @@ namespace MCPromoter
 
                 if (Configs.Logging.Plugin) LogsWriter(name, msg);
                 if (Configs.ConsoleOutput.Plugin) ConsoleOutputter(name, msg);
-
-                argsList[0] = argsList[0].ToLower();
+                
                 bool commandResult = Commands[argsList[0]](argsList, e, Api);
                 if (!commandResult)
                 {

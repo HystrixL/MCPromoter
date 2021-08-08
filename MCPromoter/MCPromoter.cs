@@ -4,7 +4,7 @@ using MCPromoter;
 
 namespace MCPromoter
 {
-    partial class MCPromoter
+    public partial class MCPromoter
     {
         public static void Init(MCCSAPI api)
         {

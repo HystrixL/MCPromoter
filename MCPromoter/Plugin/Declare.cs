@@ -5,7 +5,7 @@ using WebSocketSharp;
 
 namespace MCPromoter
 {
-    partial class MCPromoter
+    public partial class MCPromoter
     {
         public static MCCSAPI Api;
         public static Config Configs;
