@@ -47,6 +47,11 @@ namespace QuickBackup
     {
         static void Main(string[] args)
         {
+            while (args.Length!=5)
+            {
+                Console.WriteLine("外部调用请手动指明各参数.格式:模式 存档名 槽位 注释 启动器路径");
+                args = Console.ReadLine().Split(' ');
+            }
             string mode = args[0];
             string worldName = args[1];
             string slot = args[2];
