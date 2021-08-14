@@ -1,4 +1,5 @@
-﻿using CSR;
+﻿using System.Linq;
+using CSR;
 using static MCPromoter.Output;
 
 namespace MCPromoter
@@ -78,36 +79,30 @@ namespace MCPromoter
 
                 if (!Commands.ContainsKey(argsList[0]))
                 {
-                    StandardizedFeedback(name,"该指令不存在!请尝试查询@mcp help.");
+                    StandardizedFeedback(name,"您使用的指令不存在,请查询@mcp help.");
                     return true;
                 }
                 
-                foreach (var disableCommand in Configs.PluginDisable.Commands)
+                if (Configs.PluginDisable.Commands.Any(disableCommand => msg.Replace(Configs.CmdPrefix, "").StartsWith(disableCommand)))
                 {
-                    if (msg.Replace(Configs.CmdPrefix, "").StartsWith(disableCommand))
-                    {
-                        StandardizedFeedback("@a", $"该指令已被通过配置文件禁用,当前无法使用.详情请咨询Hil.");
-                        return true;
-                    }
+                    StandardizedFeedback("@a", $"该指令已被通过配置文件禁用,当前无法使用.详情请咨询Hil.");
+                    return true;
                 }
 
                 if (Configs.PluginAdmin.Enable)
                 {
                     bool isAdminCmd = false;
-                    bool isLegal = false;
-                    foreach (var adminCmd in Configs.PluginAdmin.AdminCmd)
+                    bool isAdminPlayer = false;
+                    if (Configs.PluginAdmin.AdminCmd.Any(adminCmd => msg.Replace(Configs.CmdPrefix, "").StartsWith(adminCmd)))
                     {
-                        if (msg.Replace(Configs.CmdPrefix, "").StartsWith(adminCmd))
+                        isAdminCmd = true;
+                        if (Configs.PluginAdmin.AdminList.Any(player => player.Name == name && player.Xuid == xuid))
                         {
-                            isAdminCmd = true;
-                            foreach (var player in Configs.PluginAdmin.AdminList)
-                            {
-                                if (player.Name == name && player.Xuid == xuid) isLegal = true;
-                            }
+                            isAdminPlayer = true;
                         }
                     }
 
-                    if (isAdminCmd && !isLegal)
+                    if (isAdminCmd && !isAdminPlayer)
                     {
                         StandardizedFeedback(name, $"{msg}需要admin权限才可使用，您当前无权使用该指令。");
                         return true;
@@ -117,13 +112,8 @@ namespace MCPromoter
                 if (Configs.Logging.Plugin) LogsWriter(name, msg);
                 if (Configs.ConsoleOutput.Plugin) ConsoleOutputter(name, msg);
                 
-                bool commandResult = Commands[argsList[0]](argsList, e, Api);
-                if (!commandResult)
-                {
-                    StandardizedFeedback(name,"指令使用错误!请查询@mcp help.");
-                    return true;
-                }
-
+                var commandResult = Commands[argsList[0]](argsList, e, Api);
+                if (!commandResult) StandardizedFeedback(name,"指令用法错误,请查询@mcp help.");
             }
             else
             {

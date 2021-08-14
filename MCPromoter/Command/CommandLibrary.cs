@@ -14,7 +14,7 @@ using static MCPromoter.MCPromoter;
 
 namespace MCPromoter
 {
-    public class CommandLibrary
+    public partial class CommandLibrary
     {
         public static bool cmdBack(string[] args, InputTextEvent e, MCCSAPI api)
         {
