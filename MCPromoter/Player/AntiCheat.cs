@@ -1,4 +1,5 @@
-﻿using CSR;
+﻿using System.Linq;
+using CSR;
 using static MCPromoter.Output;
 
 namespace MCPromoter
@@ -10,19 +11,13 @@ namespace MCPromoter
             var e = BaseEvent.getFrom(x) as InputCommandEvent;
             if (e == null) return true;
 
-            string name = e.playername;
-            string cmd = e.cmd;
+            var name = e.playername;
+            var cmd = e.cmd;
             if (Configs.Logging.Command) LogsWriter(name, cmd);
             if (Configs.ConsoleOutput.Command) ConsoleOutputter(name, cmd);
 
             if (!Configs.AntiCheat.Enable) return true;
-            foreach (var allowedCmd in Configs.AntiCheat.AllowedCmd)
-            {
-                if (cmd.StartsWith(allowedCmd))
-                {
-                    return true;
-                }
-            }
+            if (Configs.AntiCheat.AllowedCmd.Any(allowedCmd => cmd.StartsWith(allowedCmd))) return true;
 
             Api.runcmd($"kick {name} 试图违规使用{cmd}被踢出");
             StandardizedFeedback("@a", $"{name}试图违规使用{cmd}被踢出");

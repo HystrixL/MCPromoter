@@ -14,12 +14,12 @@ using static MCPromoter.MCPromoter;
 
 namespace MCPromoter
 {
-    public partial class CommandLibrary
+    public static class CommandLibrary
     {
         public static bool cmdBack(string[] args, InputTextEvent e, MCCSAPI api)
         {
             if (args.Length != 1) return false;
-            string name = e.playername;
+            var name = e.playername;
             if (playerDatas[name].DeadEnable)
             {
                 if (playerDatas[name].DeadWorld == e.dimension)
@@ -43,14 +43,14 @@ namespace MCPromoter
 
         public static bool cmdBot(string[] args, InputTextEvent e, MCCSAPI api)
         {
-            string name = e.playername;
+            var name = e.playername;
             if (Configs.PluginDisable.Futures.FakePlayer)
             {
                 StandardizedFeedback(name, "假人已被管理员禁用,当前无法使用.");
                 return true;
             }
 
-            if(args.Length<2) return false;
+            if (args.Length < 2) return false;
             if (args[1] == "list")
             {
                 if (args.Length > 2) return false;
@@ -59,7 +59,7 @@ namespace MCPromoter
             else
             {
                 if (args.Length != 3) return false;
-                string botName = "bot_" + args[2];
+                var botName = "bot_" + args[2];
                 if (args[1] == "add")
                 {
                     webSocket.Send(
@@ -90,25 +90,25 @@ namespace MCPromoter
         public static bool cmdCalc(string[] args, InputTextEvent e, MCCSAPI api)
         {
             if (args.Length != 2) return false;
-            string expression = args[1];
+            var expression = args[1];
             //g个 z组 h盒
             if (!expression.Contains("h") && !expression.Contains("z") && expression.Contains("g"))
             {
-                int totalItemNumber = int.Parse(expression.Replace("g", ""));
-                int boxNumber = totalItemNumber / (3 * 9 * 64);
-                int stackNumber = (totalItemNumber - boxNumber * (3 * 9 * 64)) / 64;
-                int itemNumber = totalItemNumber - boxNumber * (3 * 9 * 64) - stackNumber * 64;
+                var totalItemNumber = int.Parse(expression.Replace("g", ""));
+                var boxNumber = totalItemNumber / (3 * 9 * 64);
+                var stackNumber = (totalItemNumber - boxNumber * (3 * 9 * 64)) / 64;
+                var itemNumber = totalItemNumber - boxNumber * (3 * 9 * 64) - stackNumber * 64;
                 StandardizedFeedback("@a",
                     $"§6{totalItemNumber}个§7物品共§e{boxNumber}盒§a{stackNumber}组§b{itemNumber}个§7.");
             }
             else if (expression.Contains("h") || expression.Contains("z") || expression.Contains("g"))
             {
-                int boxNumber = 0;
-                int stackNumber = 0;
-                int itemNumber = 0;
+                var boxNumber = 0;
+                var stackNumber = 0;
+                var itemNumber = 0;
                 if (expression.Contains("h") && expression.Contains("z") && expression.Contains("g"))
                 {
-                    string[] originalNumber = expression.Split(new char[] { 'h', 'z', 'g' });
+                    var originalNumber = expression.Split(new char[] { 'h', 'z', 'g' });
                     boxNumber = int.Parse(originalNumber[0]);
                     stackNumber = int.Parse(originalNumber[1]);
                     itemNumber = int.Parse(originalNumber[2]);
@@ -116,44 +116,44 @@ namespace MCPromoter
                 else if (expression.Contains("h") && expression.Contains("z") &&
                          !expression.Contains("g"))
                 {
-                    string[] originalNumber = expression.Split(new char[] { 'h', 'z' });
+                    var originalNumber = expression.Split(new char[] { 'h', 'z' });
                     boxNumber = int.Parse(originalNumber[0]);
                     stackNumber = int.Parse(originalNumber[1]);
                 }
                 else if (expression.Contains("h") && !expression.Contains("z") &&
                          expression.Contains("g"))
                 {
-                    string[] originalNumber = expression.Split(new char[] { 'h', 'g' });
+                    var originalNumber = expression.Split(new char[] { 'h', 'g' });
                     boxNumber = int.Parse(originalNumber[0]);
                     itemNumber = int.Parse(originalNumber[1]);
                 }
                 else if (!expression.Contains("h") && expression.Contains("z") &&
                          expression.Contains("g"))
                 {
-                    string[] originalNumber = expression.Split(new char[] { 'z', 'g' });
+                    var originalNumber = expression.Split(new char[] { 'z', 'g' });
                     stackNumber = int.Parse(originalNumber[0]);
                     itemNumber = int.Parse(originalNumber[1]);
                 }
                 else if (expression.Contains("h") && !expression.Contains("z") &&
                          !expression.Contains("g"))
                 {
-                    string[] originalNumber = expression.Split(new char[] { 'h' });
+                    var originalNumber = expression.Split(new char[] { 'h' });
                     boxNumber = int.Parse(originalNumber[0]);
                 }
                 else if (!expression.Contains("h") && expression.Contains("z") &&
                          !expression.Contains("g"))
                 {
-                    string[] originalNumber = expression.Split(new char[] { 'z' });
+                    var originalNumber = expression.Split(new char[] { 'z' });
                     stackNumber = int.Parse(originalNumber[0]);
                 }
 
-                int totalItemNumber = boxNumber * (3 * 9 * 64) + stackNumber * 64 + itemNumber;
+                var totalItemNumber = boxNumber * (3 * 9 * 64) + stackNumber * 64 + itemNumber;
                 StandardizedFeedback("@a",
                     $"§e{boxNumber}盒§a{stackNumber}组§b{itemNumber}个§7物品共§6{totalItemNumber}个§7.");
             }
             else
             {
-                string result = new DataTable().Compute(expression, "").ToString();
+                var result = new DataTable().Compute(expression, "").ToString();
                 StandardizedFeedback("@a", $"{expression} = {result}");
             }
 
@@ -175,9 +175,9 @@ namespace MCPromoter
             }
             else if (args[1] == "server")
             {
-                DateTime nowDate = DateTime.Now;
-                DateTime worldStartDate = DateTime.Parse(Configs.WorldStartDate);
-                string serverDay =
+                var nowDate = DateTime.Now;
+                var worldStartDate = DateTime.Parse(Configs.WorldStartDate);
+                var serverDay =
                     ((int)nowDate.Subtract(worldStartDate).TotalDays).ToString();
                 StandardizedFeedback("@a", $"今天是开服的第{serverDay}天.");
             }
@@ -223,7 +223,7 @@ namespace MCPromoter
         public static bool cmdItem(string[] args, InputTextEvent e, MCCSAPI api)
         {
             if (args.Length != 2) return false;
-            string name = e.playername;
+            var name = e.playername;
             if (args[1] == "pick")
             {
                 Api.runcmd($"tp @e[type=item] {name}");
@@ -243,7 +243,7 @@ namespace MCPromoter
                 Task.Run(async delegate
                 {
                     await Task.Delay(1000);
-                    string itemCount = GameDatas.ItemCounter;
+                    var itemCount = GameDatas.ItemCounter;
                     StandardizedFeedback("@a", $"当前的掉落物数为{itemCount}");
                 });
             }
@@ -283,19 +283,19 @@ namespace MCPromoter
         public static bool cmdKill(string[] args, InputTextEvent e, MCCSAPI api)
         {
             if (args.Length != 1) return false;
-            string name = e.playername;
+            var name = e.playername;
             playerDatas[name].IsSuicide = true;
             Api.runcmd($"kill {name}");
             if (!Configs.PluginDisable.Futures.SuicideMessages)
             {
-                string[] _suicideMsgs = Configs.SuicideMessages;
-                for (int i = 0; i < _suicideMsgs.Length; i++)
+                var suicideMsgs = Configs.SuicideMessages;
+                for (int i = 0; i < suicideMsgs.Length; i++)
                 {
-                    _suicideMsgs[i] = _suicideMsgs[i].Replace("{}", $"§l{name}§r");
+                    suicideMsgs[i] = suicideMsgs[i].Replace("{}", $"§l{name}§r");
                 }
 
-                int suicideMsgNum = new Random().Next(0, _suicideMsgs.Length);
-                StandardizedFeedback("@a", _suicideMsgs[suicideMsgNum]);
+                var suicideMsgNum = new Random().Next(0, suicideMsgs.Length);
+                StandardizedFeedback("@a", suicideMsgs[suicideMsgNum]);
             }
 
             return true;
@@ -303,7 +303,7 @@ namespace MCPromoter
 
         public static bool cmdMCP(string[] args, InputTextEvent e, MCCSAPI api)
         {
-            string name = e.playername;
+            var name = e.playername;
             if (args[1] == "status")
             {
                 if (args.Length != 2) return false;
@@ -315,12 +315,13 @@ namespace MCPromoter
             else if (args[1] == "help")
             {
                 if (args.Length != 2) return false;
-                StandardizedFeedback(name,"§2========================");
+                StandardizedFeedback(name, "§2========================");
                 foreach (var helpText in HelpResources.Command)
                 {
                     StandardizedFeedback(name, $"{Configs.CmdPrefix}{helpText.Key}          {helpText.Value}");
                 }
-                StandardizedFeedback(name,"§2========================");
+
+                StandardizedFeedback(name, "§2========================");
             }
             else if (args[1] == "initialize")
             {
@@ -364,7 +365,7 @@ namespace MCPromoter
                     case "anticheat":
                     {
                         if (args.Length != 4) return false;
-                        string newConfig = args[3];
+                        var newConfig = args[3];
                         if (newConfig == "true" || newConfig == "false")
                         {
                             Configs.AntiCheat.Enable = bool.Parse(newConfig);
@@ -381,7 +382,7 @@ namespace MCPromoter
                     case "prefix":
                     {
                         if (args.Length != 4) return false;
-                        string newConfig = args[3];
+                        var newConfig = args[3];
                         StandardizedFeedback("@a",
                             $"MCP指令前缀已被{name}从{Configs.CmdPrefix}修改为{newConfig}");
                         Configs.CmdPrefix = newConfig;
@@ -390,7 +391,7 @@ namespace MCPromoter
                     case "staautoswitchesfreq":
                     {
                         if (args.Length != 4) return false;
-                        string newConfig = args[3];
+                        var newConfig = args[3];
                         StandardizedFeedback("@a",
                             $"计分板自动切换周期已被{name}从{Configs.StaAutoSwitchesFreq}修改为{newConfig}");
                         Configs.StaAutoSwitchesFreq = int.Parse(newConfig);
@@ -399,7 +400,7 @@ namespace MCPromoter
                     case "whitelist":
                     {
                         if (args.Length != 4) return false;
-                        string newConfig = args[3];
+                        var newConfig = args[3];
                         if (newConfig == "true" || newConfig == "false")
                         {
                             Configs.WhiteList.Enable = bool.Parse(newConfig);
@@ -416,7 +417,7 @@ namespace MCPromoter
                     case "pluginadmin":
                     {
                         if (args.Length != 4) return false;
-                        string newConfig = args[3];
+                        var newConfig = args[3];
                         if (newConfig == "true" || newConfig == "false")
                         {
                             Configs.PluginAdmin.Enable = bool.Parse(newConfig);
@@ -433,7 +434,7 @@ namespace MCPromoter
                     case "damagesplash":
                     {
                         if (args.Length != 4) return false;
-                        string newConfig = args[3];
+                        var newConfig = args[3];
                         if (newConfig == "true" || newConfig == "false")
                         {
                             StandardizedFeedback("@a",
@@ -453,7 +454,7 @@ namespace MCPromoter
                     case "offlinemessage":
                     {
                         if (args.Length != 4) return false;
-                        string newConfig = args[3];
+                        var newConfig = args[3];
                         if (newConfig == "true" || newConfig == "false")
                         {
                             Configs.PluginDisable.Futures.OfflineMessage = bool.Parse(newConfig);
@@ -473,7 +474,7 @@ namespace MCPromoter
                     }
                 }
 
-                string newYaml = new Serializer().Serialize(Configs);
+                var newYaml = new Serializer().Serialize(Configs);
                 File.WriteAllText(PluginPath.ConfigPath, newYaml);
             }
             else return false;
@@ -513,23 +514,23 @@ namespace MCPromoter
         public static bool cmdNetwork(string[] args, InputTextEvent e, MCCSAPI api)
         {
             if (args.Length != 2) return false;
-            string name = e.playername;
-            CsPlayer csPlayer = new CsPlayer(Api, e.playerPtr);
-            string[] ipport = csPlayer.IpPort.Split('|');
+            var name = e.playername;
+            var csPlayer = new CsPlayer(Api, e.playerPtr);
+            var ipport = csPlayer.IpPort.Split('|');
             if (args[1] == "ip")
             {
-                string ip = ipport[0];
+                var ip = ipport[0];
                 StandardizedFeedback("@a", $"§l{name}§r的IP地址为§e§l{ip}");
             }
             else if (args[1] == "port")
             {
-                string port = ipport[1];
+                var port = ipport[1];
                 StandardizedFeedback("@a", $"§l{name}§r的端口号为§e§l{port}");
             }
             else if (args[1] == "ping")
             {
-                Ping ping = new Ping();
-                PingReply pingReply = ping.Send(ipport[0]);
+                var ping = new Ping();
+                var pingReply = ping.Send(ipport[0]);
                 if (pingReply.Status == IPStatus.Success)
                 {
                     StandardizedFeedback("@a",
@@ -548,7 +549,7 @@ namespace MCPromoter
 
         public static bool cmdOm(string[] args, InputTextEvent e, MCCSAPI api)
         {
-            string name = e.playername;
+            var name = e.playername;
             if (Configs.PluginDisable.Futures.OfflineMessage)
             {
                 StandardizedFeedback(name, "离线消息已被管理员禁用,当前无法使用.");
@@ -556,8 +557,8 @@ namespace MCPromoter
             }
 
             if (args.Length != 3) return false;
-            string recipient = args[1];
-            string content = args[2];
+            var recipient = args[1];
+            var content = args[2];
             if (!playerDatas.ContainsKey(recipient))
             {
                 StandardizedFeedback("@a", $"无法找到玩家{recipient}的收件地址!!");
@@ -586,8 +587,8 @@ namespace MCPromoter
             if (args[1] == "make")
             {
                 if (args.Length != 4) return false;
-                string slot = args[2];
-                string comment = args[3];
+                var slot = args[2];
+                var comment = args[3];
                 if (slot == "AUTO")
                 {
                     StandardizedFeedback("@a", $"[槽位{slot}]为自动备份专用槽位,无法手动指定。槽位必须是1~5的整数，请重新指定槽位。");
@@ -618,7 +619,7 @@ namespace MCPromoter
             else if (args[1] == "back")
             {
                 if (args.Length != 3) return false;
-                string slot = args[2];
+                var slot = args[2];
                 if (!File.Exists($@"{PluginPath.QbRootPath}\{slot}.zip"))
                 {
                     StandardizedFeedback("@a", $"[槽位{slot}]的备份不存在，请重新指定槽位。");
@@ -649,7 +650,7 @@ namespace MCPromoter
             else if (args[1] == "list")
             {
                 if (args.Length != 2) return false;
-                IniFile qbIniFile = new IniFile(PluginPath.QbInfoPath);
+                var qbIniFile = new IniFile(PluginPath.QbInfoPath);
                 StandardizedFeedback("@a", "§d§l【QuickBackup各槽位信息】");
                 for (var i = 0; i < 6; i++)
                 {
@@ -684,7 +685,7 @@ namespace MCPromoter
 
         public static bool cmdQs(string[] args, InputTextEvent e, MCCSAPI api)
         {
-            string name = e.playername;
+            var name = e.playername;
             if (args.Length == 1)
             {
                 if (isQuickSleep == true)
@@ -759,7 +760,7 @@ namespace MCPromoter
             else if (args[1] == "accept")
             {
                 if (args.Length != 2) return false;
-                if (isQuickSleep == true)
+                if (isQuickSleep)
                 {
                     if (!quickSleepAcceptPlayer.Contains(name))
                     {
@@ -780,7 +781,7 @@ namespace MCPromoter
             else if (args[1] == "refuse")
             {
                 if (args.Length != 2) return false;
-                if (isQuickSleep == true)
+                if (isQuickSleep)
                 {
                     if (quickSleepAcceptPlayer.Contains(name))
                     {
@@ -891,12 +892,12 @@ namespace MCPromoter
             var systemInfo = new SystemInfo();
             if (args[1] == "cpu")
             {
-                string cpuUsage = systemInfo.GetCpuUsage();
+                var cpuUsage = systemInfo.GetCpuUsage();
                 StandardizedFeedback("@a", $"当前服务器CPU占用率为§l§6{cpuUsage}");
             }
             else if (args[1] == "memory")
             {
-                string memoryUsage = systemInfo.GetMemoryUsage();
+                var memoryUsage = systemInfo.GetMemoryUsage();
                 StandardizedFeedback("@a", $"当前服务器物理内存占用率为§l§6{memoryUsage}");
             }
             else return false;
@@ -930,18 +931,18 @@ namespace MCPromoter
             var destination = args[1];
             var destinationList = new List<string>();
 
-            playerDatas.Where(p=>p.Value.IsOnline&&p.Value.Name.ToLower().StartsWith(destination.ToLower()))
+            playerDatas.Where(p => p.Value.IsOnline && p.Value.Name.ToLower().StartsWith(destination.ToLower()))
                 .ToList()
-                .ForEach(p=>destinationList.Add(p.Value.Name));
+                .ForEach(p => destinationList.Add(p.Value.Name));
 
-            if (destinationList.Count==1)
+            if (destinationList.Count == 1)
             {
                 api.runcmd($"tp {victim} {destinationList[0]}");
-                StandardizedFeedback("@a",$"已将{victim}传送至{destinationList[0]}.");
+                StandardizedFeedback("@a", $"已将{victim}传送至{destinationList[0]}.");
             }
             else
             {
-                StandardizedFeedback("@a",$"匹配{destination}的玩家共有{destinationList.Count}名,无法进行精准传送,请修改传送目标.");
+                StandardizedFeedback("@a", $"匹配{destination}的玩家共有{destinationList.Count}名,无法进行精准传送,请修改传送目标.");
             }
 
             return true;
@@ -986,7 +987,7 @@ namespace MCPromoter
                 {
                     Configs.WhiteList.PlayerList.Add(new Player()
                         { Name = pendingName, Xuid = playerDatas[pendingName].Xuid });
-                    string newConfig = new Serializer().Serialize(Configs);
+                    var newConfig = new Serializer().Serialize(Configs);
                     File.WriteAllText(PluginPath.ConfigPath, newConfig);
                     StandardizedFeedback("@a", $"{name}已将{pendingName}加入白名单。");
                 }
@@ -1004,7 +1005,7 @@ namespace MCPromoter
                         Configs.WhiteList.PlayerList.Remove(new Player()
                             { Name = pendingName, Xuid = playerDatas[pendingName].Xuid });
                         Api.runcmd($"kick {pendingName} 您已被{name}永久封禁。");
-                        string newConfig = new Serializer().Serialize(Configs);
+                        var newConfig = new Serializer().Serialize(Configs);
                         File.WriteAllText(PluginPath.ConfigPath, newConfig);
                         StandardizedFeedback("@a", $"{pendingName}已被{name}永久封禁。");
                     }

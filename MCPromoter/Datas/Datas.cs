@@ -12,30 +12,32 @@ namespace MCPromoter
     {
         public static string Name => "MinecraftPromoter";
         public static string Version => "V2.8.4";
-        public static int VersioID
+
+        public static int VersioId
         {
             get
             {
-                string[] version = Version.Replace("V", "").Split('.');
-                int versionID = int.Parse(version[0]) * 10000 + int.Parse(version[1]) * 100 + int.Parse(version[2]);
-                return versionID;
+                var version = Version.Replace("V", "").Split('.');
+                var versionId = int.Parse(version[0]) * 10000 + int.Parse(version[1]) * 100 + int.Parse(version[2]);
+                return versionId;
             }
         }
+
         public static string Author => "XianYu_Hil";
     }
-    
+
     public static class PluginPath
     {
-        public static string RootPath = @"plugins\MCPromoter";
-        public static string PlayerDatasPath = $@"{RootPath}\playerDatas.json";
-        public static string ConfigPath = $@"{RootPath}\config.yml";
-        public static string LogsRootPath = $@"{RootPath}\Logs";
-        public static string LogsPath = $@"{LogsRootPath}\{DateTime.Now:yyMMddHHmmss}.log";
-        public static string QbRootPath = $@"{RootPath}\QuickBackup";
-        public static string QbHelperPath = $@"{QbRootPath}\QuickBackup.exe";
-        public static string QbLogPath = $@"{QbRootPath}\qbLog.txt";
-        public static string QbInfoPath = $@"{QbRootPath}\qbInfo.ini";
-    } 
+        public const string RootPath = @"plugins\MCPromoter";
+        public static readonly string PlayerDatasPath = $@"{RootPath}\playerDatas.json";
+        public static readonly string ConfigPath = $@"{RootPath}\config.yml";
+        public static readonly string LogsRootPath = $@"{RootPath}\Logs";
+        public static readonly string LogsPath = $@"{LogsRootPath}\{DateTime.Now:yyMMddHHmmss}.log";
+        public static readonly string QbRootPath = $@"{RootPath}\QuickBackup";
+        public static readonly string QbHelperPath = $@"{QbRootPath}\QuickBackup.exe";
+        public static readonly string QbLogPath = $@"{QbRootPath}\qbLog.txt";
+        public static readonly string QbInfoPath = $@"{QbRootPath}\qbInfo.ini";
+    }
 
     public static class GameDatas
     {
@@ -46,7 +48,6 @@ namespace MCPromoter
         public static string KiStatus { get; set; }
         public static string EntityCounter { get; set; }
         public static string ItemCounter { get; set; }
-
     }
 
     public class PlayerDatas

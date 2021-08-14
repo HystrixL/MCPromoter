@@ -10,10 +10,10 @@ namespace MCPromoter
             var e = BaseEvent.getFrom(x) as MobDieEvent;
             if (e == null) return true;
 
-            string attackName = e.srcname;
-            string attackType = e.srctype;
-            string deadName = e.mobname;
-            string deadType = e.mobtype;
+            var attackName = e.srcname;
+            var attackType = e.srctype;
+            var deadName = e.mobname;
+            var deadType = e.mobtype;
             if (!Configs.PluginDisable.Futures.Statistics.Killed)
             {
                 if (attackType == "entity.player.name")
@@ -57,7 +57,7 @@ namespace MCPromoter
             var e = BaseEvent.getFrom(x) as DestroyBlockEvent;
             if (e == null) return true;
 
-            string name = e.playername;
+            var name = e.playername;
             if (!string.IsNullOrEmpty(name))
             {
                 Api.runcmd($"scoreboard players add @a[name={name},tag=!BOT] Dig 1");
@@ -72,7 +72,7 @@ namespace MCPromoter
             var e = BaseEvent.getFrom(x) as PlacedBlockEvent;
             if (e == null) return true;
 
-            string name = e.playername;
+            var name = e.playername;
             if (!string.IsNullOrEmpty(name))
             {
                 Api.runcmd($"scoreboard players add @a[name={name},tag=!BOT] Placed 1");

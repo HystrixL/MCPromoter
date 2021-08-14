@@ -10,15 +10,15 @@ namespace MCPromoter
         public static void StandardizedFeedback(string targetName, string content)
         {
             Api.runcmd($"tellraw {targetName} {{\"rawtext\":[{{\"text\":\"{content}\"}}]}}");
-            Regex regex = new Regex("§[\\w]");
-            string rawContent = regex.Replace(content, "");
+            var regex = new Regex("§[\\w]");
+            var rawContent = regex.Replace(content, "");
             if (Configs.Logging.Plugin) LogsWriter("MCP", rawContent);
             if (Configs.ConsoleOutput.Plugin) ConsoleOutputter("MCP", rawContent);
         }
 
         public static void LogsWriter(string initiators, string content)
         {
-            StreamWriter logsStreamWriter = File.AppendText(PluginPath.LogsPath);
+            var logsStreamWriter = File.AppendText(PluginPath.LogsPath);
             logsStreamWriter.WriteLine($@"[{DateTime.Now.ToString()}]<{initiators}>{content}");
             logsStreamWriter.Close();
         }

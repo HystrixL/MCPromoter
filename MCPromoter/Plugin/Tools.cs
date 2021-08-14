@@ -13,28 +13,28 @@ namespace MCPromoter
     {
         public static string FormatSize(long size)
         {
-            double d = (double) size;
-            int i = 0;
+            var d = (double)size;
+            var i = 0;
             while ((d > 1024) && (i < 5))
             {
                 d /= 1024;
                 i++;
             }
 
-            string[] unit = {"B", "KB", "MB", "GB", "TB"};
-            return (string.Format("{0} {1}", Math.Round(d, 2), unit[i]));
+            string[] unit = { "B", "KB", "MB", "GB", "TB" };
+            return ($"{Math.Round(d, 2)} {unit[i]}");
         }
 
 
         public static long GetWorldSize(String path)
         {
-            DirectoryInfo directoryInfo = new DirectoryInfo(path);
+            var directoryInfo = new DirectoryInfo(path);
             long length = 0;
-            foreach (FileSystemInfo fsi in directoryInfo.GetFileSystemInfos())
+            foreach (var fsi in directoryInfo.GetFileSystemInfos())
             {
                 if (fsi is FileInfo)
                 {
-                    length += ((FileInfo) fsi).Length;
+                    length += ((FileInfo)fsi).Length;
                 }
                 else
                 {
@@ -71,33 +71,33 @@ namespace MCPromoter
 
         MEMORY_INFO GetMemoryStatus()
         {
-            MEMORY_INFO mi = new MEMORY_INFO();
-            mi.dwLength = (uint) Marshal.SizeOf(mi);
+            var mi = new MEMORY_INFO();
+            mi.dwLength = (uint)Marshal.SizeOf(mi);
             GlobalMemoryStatusEx(ref mi);
             return mi;
         }
 
         ulong GetAvailPhys()
         {
-            MEMORY_INFO mi = GetMemoryStatus();
+            var mi = GetMemoryStatus();
             return mi.ullAvailPhys;
         }
 
         ulong GetUsedPhys()
         {
-            MEMORY_INFO mi = GetMemoryStatus();
+            var mi = GetMemoryStatus();
             return (mi.ullTotalPhys - mi.ullAvailPhys);
         }
 
         ulong GetTotalPhys()
         {
-            MEMORY_INFO mi = GetMemoryStatus();
+            var mi = GetMemoryStatus();
             return mi.ullTotalPhys;
         }
 
         public string GetMemoryUsage()
         {
-            return ((float) GetUsedPhys() / GetTotalPhys()).ToString("P2");
+            return ((float)GetUsedPhys() / GetTotalPhys()).ToString("P2");
         }
 
         public string GetCpuUsage()
@@ -129,7 +129,7 @@ namespace MCPromoter
 
         public string IniReadValue(string section, string key)
         {
-            StringBuilder temp = new StringBuilder(32767);
+            var temp = new StringBuilder(32767);
             GetPrivateProfileString(section, key, "", temp, 32767, _path);
             return temp.ToString();
         }

@@ -12,10 +12,10 @@ namespace MCPromoter
             var e = BaseEvent.getFrom(x) as LoadNameEvent;
             if (e == null) return true;
 
-            string name = e.playername;
-            string uuid = e.uuid;
-            string xuid = e.xuid;
-            bool isAllowLogin = false;
+            var name = e.playername;
+            var uuid = e.uuid;
+            var xuid = e.xuid;
+            var isAllowLogin = false;
 
             if (name.StartsWith("bot_"))
             {
@@ -33,7 +33,7 @@ namespace MCPromoter
                 }
                 else
                 {
-                    playerDatas.Add(name, new PlayerDatas {Name = name, Uuid = uuid, Xuid = xuid, IsOnline = true});
+                    playerDatas.Add(name, new PlayerDatas { Name = name, Uuid = uuid, Xuid = xuid, IsOnline = true });
                     if (Configs.Logging.Plugin) LogsWriter("MCP", $"新实例化用于存储{name}信息的PlayerDatas类");
                     if (Configs.ConsoleOutput.Plugin) ConsoleOutputter("MCP", $"新实例化用于存储{name}信息的PlayerDatas类");
                 }

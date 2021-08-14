@@ -12,26 +12,26 @@ namespace MCPromoter
     {
         public static void InitializePlugin()
         {
-            DirectoryInfo pluginRootDirectory = new DirectoryInfo(PluginPath.RootPath);
+            var pluginRootDirectory = new DirectoryInfo(PluginPath.RootPath);
             if (!pluginRootDirectory.Exists)
             {
                 pluginRootDirectory.Create();
             }
 
-            DirectoryInfo logsRootDirectory = new DirectoryInfo(PluginPath.LogsRootPath);
+            var logsRootDirectory = new DirectoryInfo(PluginPath.LogsRootPath);
             if (!logsRootDirectory.Exists)
             {
                 logsRootDirectory.Create();
             }
 
-            DirectoryInfo qbRootPath = new DirectoryInfo(PluginPath.QbRootPath);
+            var qbRootPath = new DirectoryInfo(PluginPath.QbRootPath);
             if (!qbRootPath.Exists)
             {
                 qbRootPath.Create();
                 File.Create(PluginPath.QbInfoPath);
                 File.Create(PluginPath.QbLogPath);
-                IniFile qbIniFile = new IniFile(PluginPath.QbInfoPath);
-                for (int i = 0; i < 6; i++)
+                var qbIniFile = new IniFile(PluginPath.QbInfoPath);
+                for (var i = 0; i < 6; i++)
                 {
                     string slot;
                     if (i == 0)

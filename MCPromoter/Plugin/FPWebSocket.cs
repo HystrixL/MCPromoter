@@ -10,14 +10,14 @@ namespace MCPromoter
             string receive = e.Data;
             if (receive.Contains("\"type\":\"list\""))
             {
-                FakePlayerData.List fakePlayerList = javaScriptSerializer.Deserialize<FakePlayerData.List>(receive);
-                string list = string.Join("、", fakePlayerList.data.list);
+                var fakePlayerList = javaScriptSerializer.Deserialize<FakePlayerData.List>(receive);
+                var list = string.Join("、", fakePlayerList.data.list);
                 StandardizedFeedback("@a", $"服务器内存在假人 {list}");
             }
             else if (receive.Contains("\"type\":\"add\"") || receive.Contains("\"type\":\"remove\"") ||
                      receive.Contains("\"type\":\"connect\"") || receive.Contains("\"type\":\"disconnect\""))
             {
-                FakePlayerData.Operation fakePlayerOperation =
+                var fakePlayerOperation =
                     javaScriptSerializer.Deserialize<FakePlayerData.Operation>(receive);
                 if (!fakePlayerOperation.data.success)
                 {
