@@ -37,7 +37,18 @@ namespace MCPromoter
                     if (Configs.Logging.Plugin) LogsWriter("MCP", $"新实例化用于存储{name}信息的PlayerDatas类");
                     if (Configs.ConsoleOutput.Plugin) ConsoleOutputter("MCP", $"新实例化用于存储{name}信息的PlayerDatas类");
                 }
+            }
 
+            if (Configs.WhiteList.PlayerList.Any(player => player.Name == name && player.Xuid == xuid))
+            {
+                isAllowLogin = true;
+            }
+
+            if (!Configs.WhiteList.Enable) isAllowLogin = true;
+
+            if (isAllowLogin)
+            {
+                Api.runcmd("playsound random.orb @a");
                 if (!Configs.PluginDisable.Futures.OfflineMessage)
                 {
                     Task.Run(async delegate
@@ -51,26 +62,19 @@ namespace MCPromoter
                     });
                 }
             }
-
-            if (Configs.WhiteList.PlayerList.Any(player => player.Name == name && player.Xuid == xuid))
-            {
-                isAllowLogin = true;
-            }
-
-            if (!Configs.WhiteList.Enable) isAllowLogin = true;
-
-            if (!isAllowLogin)
+            else
             {
                 Task.Run(async delegate
                 {
                     await Task.Delay(1000);
                     if (Configs.Logging.PlayerOnlineOffline) LogsWriter(name, " 尝试加入服务器.");
                     if (Configs.ConsoleOutput.PlayerOnlineOffline) ConsoleOutputter(name, " 尝试加入服务器.");
-                    Api.runcmd($"kick {name} 您未受邀加入该服务器，详情请咨询Hil。");
+                    Api.disconnectClient(uuid, "您未受邀加入该服务器。");
                     if (Configs.ConsoleOutput.Plugin) ConsoleOutputter("MCP", $"{name}未受邀加入该服务器，已自动踢出。");
                     if (Configs.Logging.Plugin) LogsWriter("MCP", $"{name}未受邀加入该服务器，已自动踢出。");
                 });
             }
+
             return true;
         }
 
