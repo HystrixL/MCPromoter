@@ -11,7 +11,7 @@ namespace MCPromoter
     public static class PluginInfo
     {
         public static string Name => "MinecraftPromoter";
-        public static string Version => "V2.8.4";
+        public static string Version => "V2.8.5";
 
         public static int VersioId
         {

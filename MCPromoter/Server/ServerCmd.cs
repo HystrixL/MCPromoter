@@ -25,13 +25,10 @@ namespace MCPromoter
 
             if (cmd == "stop")
             {
-                foreach (var playerData in playerDatas)
+                foreach (var playerData in playerDatas.Where(playerData => playerData.Value.IsOnline))
                 {
-                    if (playerData.Value.IsOnline)
-                    {
-                        playerDatas[playerData.Key].IsOnline = false;
-                        Api.runcmd($"kick {playerData.Value.Name}");
-                    }
+                    playerDatas[playerData.Key].IsOnline = false;
+                    Api.runcmd($"kick {playerData.Value.Name}");
                 }
 
                 var savedPlayerDatas = javaScriptSerializer.Serialize(playerDatas);

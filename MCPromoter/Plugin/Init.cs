@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Timers;
 using WebSocketSharp;
@@ -166,7 +167,7 @@ namespace MCPromoter
                 LogsWriter("MCP", "找不到指定的插件加载器,QuickBackup无法重启服务器!请检查配置文件.");
             }
 
-            bool webSocketStatus;
+            // bool webSocketStatus;
             if (!Configs.PluginDisable.Futures.FakePlayer)
             {
                 try

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Timers;
 using CSR;
@@ -804,7 +805,7 @@ namespace MCPromoter
         {
             if (args.Length == 1) return false;
             var msg = string.Join(" ", args);
-            var command = msg.Replace($"{Configs.CmdPrefix}rc ", "");
+            var command = msg.Replace("rc ", "");
             var cmdResult = Api.runcmd(command);
             StandardizedFeedback("@a", cmdResult ? $"已成功向控制台注入了{command}" : $"{command}运行失败");
 
