@@ -5,17 +5,17 @@ namespace MCPromoter
     public static class HelpResources
     {
         public static Dictionary<string, string> Command = new Dictionary<string, string>();
-        
+
         public static readonly string[] Setting =
         {
             "§2========================",
-            "anticheat [true|false]      开启/关闭反作弊",
+            "AntiCheat [true|false]      开启/关闭反作弊",
             "prefix <newPrefix>     修改插件前缀",
-            "staautoswitchesfreq <newFreq>      修改计分板自动切换频率",
-            "whitelist [true|false]      开启/关闭插件内置计分板",
-            "pluginadmin [true|false]       开启/关闭插件管理员",
-            "damagesplash [true|false|int]      开启/关闭/修改剑横扫伤害数量上限",
-            "offlinemessage [true|false]    开启/关闭离线消息",
+            "StaAutoSwitchesFreq <newFreq>      修改计分板自动切换频率",
+            "Whitelist [true|false]      开启/关闭插件内置计分板",
+            "PluginAdmin [true|false]       开启/关闭插件管理员",
+            "DamageSplash [true|false|int]      开启/关闭/修改剑横扫伤害数量上限",
+            "OfflineMessage [true|false]    开启/关闭离线消息",
             "§2========================"
         };
 

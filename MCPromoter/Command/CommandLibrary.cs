@@ -361,7 +361,7 @@ namespace MCPromoter
                     return true;
                 }
 
-                switch (args[2])
+                switch (args[2].ToLower())
                 {
                     case "anticheat":
                     {
